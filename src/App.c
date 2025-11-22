@@ -5,7 +5,7 @@
 // ----- App functions -----
 APP *AppNew(const char *title, int width, int height, SDL_WindowFlags window_flags, const char *icon) 
 {
-        APP *app = malloc(sizeof(APP)); 
+        APP *app = (APP*)malloc(sizeof(APP)); 
         if ( app==NULL ) {
                 LogError("AppNew/malloc", "malloc failed");
                 goto failure0;
@@ -17,7 +17,7 @@ APP *AppNew(const char *title, int width, int height, SDL_WindowFlags window_fla
         if ( NULL==title )
                 goto no_title;
 
-        app->Properties.Title = malloc(strlen(title)+1);
+        app->Properties.Title = (char*)malloc(strlen(title)+1);
         if ( NULL==app->Properties.Title ) {
                 LogError("AppNew/malloc", "malloc failed");
                 goto failure1; 
@@ -145,12 +145,8 @@ int AppGetFps(APP *app) {
 
 
 // Quit
-void AppQuit(APP **app_p) 
+void AppQuit(APP *app) 
 {   
-        if ( NULL==app_p )
-                return;
-
-        APP *app = *app_p;
         if ( NULL==app ) 
                 return;
 
@@ -166,7 +162,5 @@ void AppQuit(APP **app_p)
         if ( app->Properties.Icon )
                 SDL_DestroySurface(app->Properties.Icon);
         
-
         free(app);
-        *app_p = NULL;
 }

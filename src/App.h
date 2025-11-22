@@ -61,7 +61,7 @@ void AppSetFps(APP *app, int fps);
 int AppGetFps(APP *app);
 
 
-void AppQuit(APP **app_p);
+void AppQuit(APP *app);
 
 
 

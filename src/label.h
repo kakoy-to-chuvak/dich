@@ -37,7 +37,7 @@ typedef struct LABEL {
 
 
 LABEL *Label_New(SDL_Renderer *renderer, const char *font_name, const char *_Text, float ptsize, SDL_Color foreground, int16_t flags, LABEL_PARAMS params);
-int Label_Free(LABEL **labelp);
+int Label_Free(LABEL *label);
 bool Label_Draw(LABEL *label, SDL_FRect *srcrect, SDL_FRect *dstrect);
 int Label_Update(LABEL *label, const char *_Text, SDL_Color fg);
 

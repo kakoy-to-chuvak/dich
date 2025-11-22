@@ -1,6 +1,6 @@
 #include "label.h"
 
-void BlitSymetricalPoints(SDL_Surface *src, SDL_Surface *dst, uint32_t radius, uint32_t x, uint32_t y) {
+void BlitSymetricalPoints(SDL_Surface *src, SDL_Surface *dst, int radius, int x, int y) {
         SDL_BlitSurface(src, NULL, dst, &((SDL_Rect){radius+x,radius+y,0,0}) );
         SDL_BlitSurface(src, NULL, dst, &((SDL_Rect){radius-x,radius+y,0,0}) );
         SDL_BlitSurface(src, NULL, dst, &((SDL_Rect){radius+x,radius-y,0,0}) );
@@ -12,7 +12,7 @@ void BlitSymetricalPoints(SDL_Surface *src, SDL_Surface *dst, uint32_t radius, u
 }
 
 
-SDL_Surface *RenderBubbleText(TTF_Font *font, const char *_Text, size_t length, uint32_t radius, SDL_Color inner_color, SDL_Color outer_color) {
+SDL_Surface *RenderBubbleText(TTF_Font *font, const char *_Text, size_t length, int radius, SDL_Color inner_color, SDL_Color outer_color) {
         SDL_Surface *outer_surf = TTF_RenderText_Blended(font, _Text, length, outer_color);
         if ( NULL == outer_surf ) {
                 return NULL;
@@ -31,8 +31,8 @@ SDL_Surface *RenderBubbleText(TTF_Font *font, const char *_Text, size_t length, 
                 return NULL;
         }
 
-        int32_t x = 0, y = radius;
-        int32_t d = 3 - 2 * radius;
+        int x = 0, y = radius;
+        int d = 3 - 2 * radius;
         BlitSymetricalPoints(outer_surf, result_surf, radius, x, y);
         while (y >= x){
                 if (d > 0) {
@@ -55,7 +55,7 @@ SDL_Surface *RenderBubbleText(TTF_Font *font, const char *_Text, size_t length, 
 }
 
 
-SDL_Surface *RenderBorderedText(TTF_Font *font, const char *_Text, size_t length, uint32_t radius, SDL_Color inner_color, SDL_Color outer_color) {
+SDL_Surface *RenderBorderedText(TTF_Font *font, const char *_Text, size_t length, int radius, SDL_Color inner_color, SDL_Color outer_color) {
 
         SDL_Surface *outer_surf = TTF_RenderText_Blended(font, _Text, length, outer_color);
         if ( NULL == outer_surf ) {
@@ -75,7 +75,7 @@ SDL_Surface *RenderBorderedText(TTF_Font *font, const char *_Text, size_t length
                 return NULL;
         }
 
-        uint32_t x = 0;
+        int x = 0;
         BlitSymetricalPoints(outer_surf, result_surf, radius, x, radius);
         while (radius-1 >= x){
                 x++;
@@ -97,7 +97,7 @@ LABEL *Label_New(SDL_Renderer *renderer, const char *font_name, const char *_Tex
                 return NULL;
         
         // allocate memory for struct
-        LABEL *text = malloc(sizeof(LABEL));
+        LABEL *text = (LABEL*)malloc(sizeof(LABEL));
         if ( 0 == text ) {
                 LogError("TextNew", "Error on allocate memory");
                 goto failure0;
@@ -148,10 +148,7 @@ LABEL *Label_New(SDL_Renderer *renderer, const char *font_name, const char *_Tex
 }
 
 
-int Label_Free(LABEL **labelp) {
-        if ( NULL == labelp ) 
-                return 0;
-        LABEL *label = *labelp;
+int Label_Free(LABEL *label) {
         if ( NULL==label )
                 return 0;
         if (label->texture) SDL_DestroyTexture(label->texture);

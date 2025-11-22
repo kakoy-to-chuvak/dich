@@ -9,7 +9,7 @@
 #define APP_WIDTH 806 
 #define APP_HEIGHT 540
 
-#define TPS 180
+#define TPS 60
 #define FPS 60
 
 #define TEXT_SIZE (30)
@@ -20,12 +20,13 @@
 #define TEXT_PARAMS ((LABEL_PARAMS){TEXT_BORDER_COLOR, 4})
 
 
-#define MENU_BG ((SDL_Color){128, 128, 128, 255})
-#define MENU_BORDER_COLOR ((SDL_Color){0, 0, 0, 255})
+#define MENU_BG ((SDL_Color){31, 31, 31, 255})
+#define MENU_BORDER_COLOR ((SDL_Color){100, 100, 100, 255})
+#define MENU_TRIGGER_COLOR ((SDL_Color){148, 148, 148, 255})
 
 
 #define POINT_DIAMETR 31
-#define POINT_RADIUS (POINT_DIAMETR / 2.f)
+#define POINT_RADIUS (POINT_DIAMETR / 2)
 
 
 

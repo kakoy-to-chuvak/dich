@@ -26,52 +26,52 @@ APP *app;
 LABEL *point_text;
 
 MENU *menu;
-LABEL *menu_up;
-LABEL *menu_down;
-LABEL *menu_left;
-LABEL *menu_right;
-
-float x = 100, y = 100;
-
-void *F_menu_up(void *m) {
-        y -= 20;
-        return m;
-}
-void *F_menu_down(void *m) {
-        y += 20;
-        return m;
-}
-void *F_menu_left(void *m) {
-        x -= 20;
-        return m;
-}
-void *F_menu_right(void *m) {
-        x += 20;
-        return m;
-}
 
 SDL_Texture *background_texture = NULL;
 SDL_Texture *point_texture = NULL;
 
 
-bool mouse_pressed = 0;
+bool lmb_pressed = 0;
+bool rmb_pressed = 0;
 bool shift_pressed = 0;
 
-bool points_changed = 1;
+bool changes = 1;
 PArray points = {
         {
-                {{100, 100}, none},
-                {{100, 500}, none},
-                {{150, 200}, none},
-                {{450, 500}, none},
-                {{500, 300}, none},
-                {{200, 100}, none},
-                {{300, 270}, none},
-                {{70, 277}, none}
+                {{100, 100}, NONE_STATE, NONE_STATE},
+                {{100, 500}, NONE_STATE, NONE_STATE},
+                {{150, 200}, NONE_STATE, NONE_STATE},
+                {{450, 500}, NONE_STATE, NONE_STATE},
+                {{500, 300}, NONE_STATE, NONE_STATE},
+                {{200, 100}, NONE_STATE, NONE_STATE},
+                {{300, 270}, NONE_STATE, NONE_STATE},
+                {{70, 277}, NONE_STATE, NONE_STATE}
         },
         NULL,
-        4
+        NULL,
+        6
 };
+
+
+
+
+int render(APP *app) {
+        if ( changes == 0 )
+                return 1;
+        changes = 0;
+        
+        SDL_RenderClear(app->Renderer);
+        SDL_RenderTexture(app->Renderer, background_texture, NULL, NULL);
+
+        RenderPath(app->Renderer, point_texture, &points, point_text);
+
+        Menu_Render(menu);
+
+        SDL_SetRenderDrawColor(app->Renderer, 0, 0, 0, 255);
+        
+        SDL_RenderPresent(app->Renderer);
+        return 1;
+}
 
 
 int setup(APP *app) {
@@ -110,62 +110,19 @@ int setup(APP *app) {
         }
 
         menu = Menu_New(app->Renderer, 100, 100, 
-                MENU_BG, 2, MENU_BORDER_COLOR);
+                MENU_BG, 5, 1, MENU_BORDER_COLOR);
         if ( NULL == menu ) {
                 LogError("setup", "Menu_New failed");
                 return 0;
         }
 
-        menu_down = Label_New(app->Renderer, "fonts/ArialBlackPrimer.ttf", "down", 20, TEXT_COLOR_FG, 0, LABEL_VOID_PARAMS);
-        if ( NULL == menu_down ) return 0;
-
-        menu_up = Label_New(app->Renderer, "fonts/ArialBlackPrimer.ttf", "up", 20, TEXT_COLOR_FG, 0, LABEL_VOID_PARAMS);
-        if ( NULL == menu_down ) return 0;
-
-        menu_left = Label_New(app->Renderer, "fonts/ArialBlackPrimer.ttf", "left", 20, TEXT_COLOR_FG, 0, LABEL_VOID_PARAMS);
-        if ( NULL == menu_down ) return 0;
-
-        menu_right = Label_New(app->Renderer, "fonts/ArialBlackPrimer.ttf", "right", 20, TEXT_COLOR_FG, 0, LABEL_VOID_PARAMS);
-        if ( NULL == menu_down ) return 0;
-
-        menu->active = 1;
-        
-        Menu_SetButton(menu, 0, 90, 20, 5, 4, MENU_BG, 1, MENU_BORDER_COLOR, menu_down, F_menu_down);
-        Menu_SetButton(menu, 1, 90, 20, 5, 28, MENU_BG, 1, MENU_BORDER_COLOR, menu_up, F_menu_up);
-        Menu_SetButton(menu, 2, 90, 20, 5, 52, MENU_BG, 1, MENU_BORDER_COLOR, menu_left, F_menu_left);
-        Menu_SetButton(menu, 3, 90, 20, 5, 76, MENU_BG, 1, MENU_BORDER_COLOR, menu_right, F_menu_right);
-
-
-        SDL_SetTextureColorMod(point_texture, 0, 0, 0);
-
-        SDL_RenderClear(app->Renderer);
-        SDL_RenderTexture(app->Renderer, background_texture, NULL, NULL);
-
-        RenderPath(app->Renderer, point_texture, &points, point_text);
-
-        Menu_Draw(menu, 100, 100);
-        
-        SDL_RenderPresent(app->Renderer);
+        render(app);
 
         return 1;
 }
 
 
-int render(APP *app) {
-        if ( points_changed == 0 )
-                return 1;
-        points_changed = 0;
-        
-        SDL_RenderClear(app->Renderer);
-        SDL_RenderTexture(app->Renderer, background_texture, NULL, NULL);
 
-        RenderPath(app->Renderer, point_texture, &points, point_text);
-
-        Menu_Draw(menu, x, y);
-        
-        SDL_RenderPresent(app->Renderer);
-        return 1;
-}
 
 
 int Tick(APP *app) {
@@ -184,12 +141,18 @@ int Tick(APP *app) {
                                 mouse_y = event.motion.y;
                                 break;
                         case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                                if ( event.button.button == 1 )
-                                        mouse_pressed = 1;
+                                if ( event.button.button == 1 ) {
+                                        lmb_pressed = 1;
+                                } else if ( event.button.button == 3 ) {
+                                        rmb_pressed = 1;
+                                }
                                 break;
                         case SDL_EVENT_MOUSE_BUTTON_UP:
-                                if ( event.button.button == 1 )
-                                        mouse_pressed = 0;
+                                if ( event.button.button == 1 ) {
+                                        lmb_pressed = 0;
+                                } else if ( event.button.button == 3 ) { 
+                                        rmb_pressed = 0;
+                                }
                                 break; 
                         case SDL_EVENT_KEY_DOWN: 
                                 switch (event.key.scancode) {
@@ -218,13 +181,23 @@ int Tick(APP *app) {
                 }
         }
 
-        points_changed = points_changed || CheckMousePos(&points, mouse_x, mouse_y, mouse_pressed, shift_pressed);
+        static bool prev_lmb_state = 0;
+        bool lmb_clicked = lmb_pressed && prev_lmb_state == 0;
 
-        static uint64_t update_timer = 0;
-        if ( SDL_GetTicksNS() - update_timer > 500000000) {
-                points_changed = points_changed || Menu_CheckUpdate(menu, mouse_x, mouse_y, mouse_pressed);
-                update_timer = SDL_GetTicksNS();
+        static bool prev_rmb_state = 0;
+        bool rmb_clicked = rmb_pressed && prev_rmb_state == 0;
+        if ( rmb_clicked ) {
+                Menu_Move(menu, mouse_x, mouse_y, APP_WIDTH, APP_HEIGHT);
+                menu->active = 1;
+                changes = 1;
         }
+
+        changes = CheckMousePos(&points, mouse_x, mouse_y, lmb_pressed, prev_lmb_state, shift_pressed) || changes;
+
+        changes = Menu_CheckUpdate(menu, mouse_x, mouse_y, lmb_clicked) || changes;
+
+        prev_lmb_state = lmb_pressed;
+        prev_rmb_state = rmb_pressed;
 
         return 1;
 }
@@ -265,17 +238,12 @@ int main() {
         AppMainloop(app);
 
         app_quit:
-        Label_Free(&point_text);
-
-        Label_Free(&menu_down);
-        Label_Free(&menu_left);
-        Label_Free(&menu_right);
-        Label_Free(&menu_up);
+        Label_Free(point_text);
         Menu_Free(menu);
 
         SDL_DestroyTexture(point_texture);
         SDL_DestroyTexture(background_texture);
-        AppQuit(&app);
+        AppQuit(app);
         TTF_Quit();
         SDL_Quit();
         return 0;

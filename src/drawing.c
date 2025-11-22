@@ -5,24 +5,32 @@
 
 
 void RenderLine(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, int32_t radius) {
-        int32_t x = 0; 
+        int32_t x = radius;
+        int32_t y = 0; 
+        int32_t err = 0;
 
         int32_t x0 = FIX_CORD(P0.x, APP_WIDTH, radius);
         int32_t y0 = FIX_CORD(P0.y, APP_HEIGHT, radius);
         int32_t x1 = FIX_CORD(P1.x, APP_WIDTH, radius);
         int32_t y1 = FIX_CORD(P1.y, APP_HEIGHT, radius);
 
-        while ( x <= radius ) {
-                SDL_RenderLine(renderer, x0 + x, y0 + radius, x1 + x, y1 + radius);
-                SDL_RenderLine(renderer, x0 + x, y0 - radius, x1 + x, y1 - radius);
-                SDL_RenderLine(renderer, x0 - x, y0 + radius, x1 - x, y1 + radius);
-                SDL_RenderLine(renderer, x0 - x, y0 - radius, x1 - x, y1 - radius);
-                SDL_RenderLine(renderer, x0 + radius, y0 + x, x1 + radius, y1 + x);
-                SDL_RenderLine(renderer, x0 + radius, y0 - x, x1 + radius, y1 - x);
-                SDL_RenderLine(renderer, x0 - radius, y0 + x, x1 - radius, y1 + x);
-                SDL_RenderLine(renderer, x0 - radius, y0 - x, x1 - radius, y1 - x);
+        while ( x >= y ) {
+                SDL_RenderLine(renderer, x0 + x, y0 + y, x1 + x, y1 + y);
+                SDL_RenderLine(renderer, x0 + x, y0 - y, x1 + x, y1 - y);
+                SDL_RenderLine(renderer, x0 - x, y0 + y, x1 - x, y1 + y);
+                SDL_RenderLine(renderer, x0 - x, y0 - y, x1 - x, y1 - y);
+                SDL_RenderLine(renderer, x0 + y, y0 + x, x1 + y, y1 + x);
+                SDL_RenderLine(renderer, x0 + y, y0 - x, x1 + y, y1 - x);
+                SDL_RenderLine(renderer, x0 - y, y0 + x, x1 - y, y1 + x);
+                SDL_RenderLine(renderer, x0 - y, y0 - x, x1 - y, y1 - x);
 
-                x++;
+                if (err <= 0) {
+        	    y += 1;
+        	    err += 2*y + 1;
+        	} else {
+        	    x -= 1;
+        	    err -= 2*x + 1;
+        	}
         }
 }
                         
@@ -49,4 +57,98 @@ void RenderArrow(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, double ba
 
 
         SDL_RenderGeometry(renderer, NULL, vertex, 3, NULL, 0);
+}
+
+
+void RenderCircle(SDL_Renderer *renderer, float x0, float y0, float radius) {
+        float x = radius;
+        float y = 0;
+        float err = 0;
+
+        while (x >= y)
+        {
+        	SDL_RenderPoint(renderer, x0 + x, y0 + y);
+        	SDL_RenderPoint(renderer, x0 + y, y0 + x);
+        	SDL_RenderPoint(renderer, x0 - y, y0 + x);
+        	SDL_RenderPoint(renderer, x0 - x, y0 + y);
+        	SDL_RenderPoint(renderer, x0 - x, y0 - y);
+        	SDL_RenderPoint(renderer, x0 - y, y0 - x);
+        	SDL_RenderPoint(renderer, x0 + y, y0 - x);
+        	SDL_RenderPoint(renderer, x0 + x, y0 - y);
+
+        	if (err <= 0)
+        	{
+        	    y += 1;
+        	    err += 2*y + 1;
+        	}
+
+        	if (err > 0)
+        	{
+        	    x -= 1;
+        	    err -= 2*x + 1;
+        	}
+        }
+}
+
+
+void Render_RounderRect(SDL_Renderer *renderer, SDL_FRect rect, float radius) {
+        SDL_FRect now_rect = {
+                rect.x + radius,
+                rect.y,
+                rect.w - 2 * radius,
+                rect.h
+        };
+
+        SDL_RenderFillRect(renderer, &now_rect);
+
+        now_rect = (SDL_FRect){
+                rect.x,
+                rect.y + radius,
+                radius,
+                rect.h - 2 * radius
+        };
+
+        SDL_RenderFillRect(renderer, &now_rect);
+
+        now_rect = (SDL_FRect){
+                rect.x + rect.w - radius,
+                rect.y + radius,
+                radius,
+                rect.h - 2 * radius
+        };
+
+        SDL_RenderFillRect(renderer, &now_rect);
+        
+        int32_t x_left = rect.x + radius;
+        int32_t y_up = rect.y + radius;
+        int32_t x_right = rect.x + rect.w - radius - 1;
+        int32_t y_bottom = rect.y + rect.h - radius - 1;
+       
+        int32_t x = radius;
+        int32_t y = 0;
+        int32_t err = 0;
+
+        // SDL_RenderLine(renderer, x_left - x, y_up - y, x_right + x, y_up - y);
+        // SDL_RenderLine(renderer, x_left - x, y_bottom + y, x_right + x, y_bottom + y);
+        
+        while (x >= y)
+        {
+
+        	if (err <= 0)
+        	{
+        	    y += 1;
+        	    err += 2*y + 1;
+        	}
+
+        	if (err > 0)
+        	{
+        	    x -= 1;
+        	    err -= 2*x + 1;
+        	}
+
+                SDL_RenderLine(renderer, x_left - x, y_up - y, x_right + x, y_up - y);
+                SDL_RenderLine(renderer, x_left - x, y_bottom + y, x_right + x, y_bottom + y);
+                SDL_RenderLine(renderer, x_left - y, y_up - x, x_right + y, y_up - x);
+                SDL_RenderLine(renderer, x_left - y, y_bottom + x, x_right + y, y_bottom + x);
+        }
 }
