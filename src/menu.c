@@ -14,8 +14,7 @@ float fix_cord(float x, float w, float app_x) {
         }
 }
 
-MENU *Menu_New( SDL_Renderer *renderer, 
-                int32_t width, int32_t height, 
+MENU *Menu_New( SDL_Renderer *renderer,  
                 SDL_Color background, int32_t border_radius,
                 int32_t border, SDL_Color border_color ) 
 {
@@ -24,49 +23,94 @@ MENU *Menu_New( SDL_Renderer *renderer,
         if ( NULL == menu )
                 return NULL;
 
-        menu->h = height;
-        menu->w = width;
+        menu->h = 0;
+        menu->w = 0;
         menu->x = 0;
         menu->y = 0;
         
         menu->bg_color = background;
         menu->border_color = border_color;
-        menu->border = border;
+        menu->border_width = border;
         menu->border_radius = border_radius;
 
         menu->renderer = renderer;
         menu->active = 0;
         menu->buttons = NULL;
 
+        menu->button_h = 0;
+        menu->button_w = 0;
+
+        menu->w = 0;
+        menu->h = 0;
+
+        menu->button_indent_h = 0;
+        menu->button_indent_w = 0;
+
+        menu->text_indent_h = 0;
+        menu->text_indent_w = 0;
+
+        menu->button_radius = 0;
+
         return menu;
 }
 
 
+void Menu_SetupButtons( MENU *menu, float radius,
+                        int32_t width, int32_t height,
+                        SDL_Color background, SDL_Color trigger_color,
+                        int32_t indent_w, int32_t indent_h,
+                        int32_t text_indent_w, int32_t text_indent_h) 
+{
+        if ( menu == NULL )
+                return;
+
+        menu->button_bg_color = background;
+        menu->trigger_color = trigger_color;
+
+        menu->button_h = height;
+        menu->button_w = width;
+
+        menu->w = width + 2 * indent_w;
+        menu->h = menu->h - 2 * menu->button_indent_h + 2 * indent_h;
+
+        menu->button_indent_h = indent_h;
+        menu->button_indent_w = indent_w;
+
+        menu->text_indent_h = text_indent_h;
+        menu->text_indent_w = text_indent_w;
+
+        menu->button_radius = radius;
+
+}
 
 // Render functions
-void __Menu_DrawButton(SDL_Renderer *renderer, float menu_x, float menu_y, MENU_BUTTON *button ) {
+void __Menu_DrawButton(MENU *menu, int32_t x, int32_t y, SDL_Color color, LABEL *label) {
         SDL_FRect rect = (SDL_FRect){
-                menu_x + button->x, menu_y + button->y, 
-                button->w, button->h
+                x, y,
+                menu->button_w,
+                menu->button_h
         };
 
-        SDL_FRect label = (SDL_FRect){
-                rect.x + (rect.w - button->label->rect.w) / 2,
-                rect.y + (rect.h - button->label->rect.h) / 2 ,
-                button->label->rect.w,
-                button->label->rect.h
-        };
-        if ( button->triggered ) {
-                SDL_SetRenderDrawColor(renderer, button->trigger_color.r, button->trigger_color.g,
-                                             button->trigger_color.b, button->trigger_color.a );
-        } else {
-                SDL_SetRenderDrawColor(renderer, button->bg_color.r, button->bg_color.g,
-                                             button->bg_color.b, button->bg_color.a );
-        }
-        SDL_RenderFillRect(renderer, &rect);SDL_SetRenderDrawColor(renderer, button->bg_color.r, button->bg_color.g,
-                                             button->bg_color.b, button->bg_color.a );
+        SDL_SetRenderDrawColor( menu->renderer, 
+                                color.r, color.g,
+                                color.b, color.a );
 
-        Label_Draw(button->label, NULL, &label);
+        Render_RounderRect(menu->renderer, rect, menu->button_radius);
+
+        if ( label == NULL )
+                return;
+
+        float label_h = menu->button_h - 2 * menu->text_indent_h;
+        float label_w = label_h * label->rect.w / label->rect.h;
+        
+        SDL_FRect label_rect = (SDL_FRect){
+                rect.x + menu->text_indent_w,
+                rect.y + menu->text_indent_h,
+                label_w,
+                label_h
+        };
+
+        Label_Draw(label, NULL, &label_rect);
 }
 
 void __Menu_DrawBorder(SDL_Renderer *renderer, SDL_FRect border, int32_t border_width, int32_t border_radius) {
@@ -166,10 +210,10 @@ void Menu_Render(MENU *menu) {
         };
 
         SDL_FRect border = (SDL_FRect){
-                x - menu->border,
-                y - menu->border,
-                rect.w + 2 * menu->border,
-                rect.h + 2 * menu->border
+                x - menu->border_width,
+                y - menu->border_width,
+                rect.w + 2 * menu->border_width,
+                rect.h + 2 * menu->border_width
         };
 
         SDL_SetRenderDrawColor( menu->renderer, menu->border_color.r, menu->border_color.g,
@@ -182,8 +226,18 @@ void Menu_Render(MENU *menu) {
         Render_RounderRect(menu->renderer, rect, menu->border_radius);
 
         MENU_BUTTON *now = menu->buttons;
+        x = x + menu->button_indent_w;
+        y = y + menu->button_indent_h;
+
         while ( now ) {
-                __Menu_DrawButton(menu->renderer, x, y, now);
+                if ( now->hide )
+                        goto next;
+                
+                SDL_Color color = now->triggered ? menu->trigger_color : menu->button_bg_color;
+                __Menu_DrawButton(menu, x, y, color, now->label);
+                y += menu->button_h;
+
+                next:
                 now = now->next;
         }
 }
@@ -217,11 +271,11 @@ MENU_BUTTON *Menu_GetButton(MENU *menu, int id) {
 
 
 
-MENU_BUTTON *Menu_SetButton( MENU *menu, int id,
-                    int32_t width, int32_t height, 
-                    int32_t x, int32_t y, 
-                    SDL_Color background, SDL_Color trigger_color,
-                    LABEL *label, void* (*function)(void*) ) 
+MENU_BUTTON *Menu_SetButton(    MENU *menu, 
+                                int id,
+                                LABEL *label,
+                                void* (*function)(void*) 
+                        )
 {       
         MENU_BUTTON *button = Menu_GetButton(menu, id);
 
@@ -229,7 +283,7 @@ MENU_BUTTON *Menu_SetButton( MENU *menu, int id,
                 button = malloc(sizeof(MENU_BUTTON));
                 if ( button == NULL)
                         return NULL;
-
+                        
                 if ( menu->buttons ) 
                         menu->buttons->prev = button;
                 button->prev = NULL;
@@ -237,19 +291,14 @@ MENU_BUTTON *Menu_SetButton( MENU *menu, int id,
                 menu->buttons = button;
 
                 button->id = id;
+                menu->h += menu->button_h;
         }
         
-        button->bg_color = background;
-        button->trigger_color = trigger_color;
         button->triggered = 0;
+        button->hide = 0;
 
         button->function =  function;
-        button->label = label;
-
-        button->h = height;
-        button->w = width;
-        button->x = x;
-        button->y = y;      
+        button->label = label;   
 
         return button;
 }
@@ -260,14 +309,40 @@ bool Menu_DelButton(MENU *menu, MENU_BUTTON *button) {
         if ( NULL == menu || NULL == button ) 
                 return 0;
         
-        button->prev->next = button->next;
-        button->next->prev = button->prev;
+        if ( button->prev )
+                button->prev->next = button->next;
+        else 
+                menu->buttons = button->next;
+
+        if ( button->next )
+                button->next->prev = button->prev;
+
+        menu->h -= menu->button_h;
 
         free(button);
 
         return 1;
 }
 
+void Menu_ButtonHide(MENU *menu, MENU_BUTTON *button, bool hide) {
+        if ( button == NULL )
+                return;
+
+        if ( button->hide == 0 && hide == 1 ) {
+                menu->h -= menu->button_h;
+        } else if ( button->hide == 1 && hide == 0 ) {
+                menu->h += menu->button_h;
+        }
+
+        button->hide = hide;
+}
+
+bool Menu_MouseOut(MENU *menu, int32_t mouse_x, int32_t mouse_y) {
+        return  mouse_x < menu->x - menu->border_width || 
+                mouse_y < menu->y - menu->border_width || 
+                mouse_x > menu->x + menu->w + menu->border_width || 
+                mouse_y > menu->y + menu->h + menu->border_width;
+}
 
 
 bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
@@ -277,19 +352,20 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
         
         bool res = 0;
 
-        bool mouse_out_menu = mouse_x < menu->x - menu->border || mouse_y < menu->y - menu->border || mouse_x > menu->x + menu->w + menu->border || mouse_y > menu->y + menu->h + menu->border;
+        bool mouse_out_menu = Menu_MouseOut(menu, mouse_x, mouse_y);
         if ( mouse_out_menu && click ) {
                 menu->active = 0;
                 res = 1;
         }
 
-
-        mouse_x -= menu->x;
-        mouse_y -= menu->y;
+        int32_t now_y = menu->y + menu->button_indent_h;
+        int32_t button_x = menu->x + menu->button_indent_w;
+        int32_t button_h = menu->button_h;
+        int32_t button_w = menu->button_w;
 
         MENU_BUTTON *now = menu->buttons;
         while ( now ) {
-                if ( mouse_out_menu  ) {
+                if ( mouse_out_menu || now->hide == 1 ) {
                         if ( now->triggered )
                                 res = 1;
                         now->triggered = 0;
@@ -297,8 +373,8 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
                         continue;
                 }
 
-                if ( mouse_x > now->x && mouse_x < now->x + now->w &&
-                     mouse_y > now->y && mouse_y < now->y + now->h ) {
+                if ( mouse_x > button_x && mouse_x < button_x + button_w &&
+                     mouse_y > now_y && mouse_y < now_y + button_h ) {
                         if ( now->triggered == 0 ) {
                                 res = 1;
                                 now->triggered = 1;
@@ -306,7 +382,9 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
 
                         if ( click ) {
                                 res = 1;
-                                now->function(menu);
+                                if ( now->function )
+                                        now->function(menu);
+                                menu->active = 0;
                         }
                 } else {
                         if ( now->triggered == 1 ) {
@@ -316,6 +394,7 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
                 }
 
                 now = now->next;
+                now_y += menu->button_h;
         }
 
         return res;
@@ -327,6 +406,6 @@ void Menu_Move(MENU *menu, float x, float y, float window_w, float window_h) {
         if ( menu == NULL ) 
                 return;
 
-        menu->x = fix_cord(x, menu->border + menu->w, window_w);
-        menu->y = fix_cord(y, menu->border + menu->h, window_h);
+        menu->x = fix_cord(x, menu->border_width + menu->w, window_w);
+        menu->y = fix_cord(y, menu->border_width + menu->h, window_h);
 }

@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <windows.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -66,8 +65,6 @@ int render(APP *app) {
         RenderPath(app->Renderer, point_texture, &points, point_text);
 
         Menu_Render(menu);
-
-        SDL_SetRenderDrawColor(app->Renderer, 0, 0, 0, 255);
         
         SDL_RenderPresent(app->Renderer);
         return 1;
@@ -109,12 +106,14 @@ int setup(APP *app) {
                 return 0;
         }
 
-        menu = Menu_New(app->Renderer, 100, 100, 
-                MENU_BG, 5, 1, MENU_BORDER_COLOR);
+        menu = Menu_New(app->Renderer, 
+                MENU_BG, 7, 0, MENU_BORDER_COLOR);
         if ( NULL == menu ) {
                 LogError("setup", "Menu_New failed");
                 return 0;
         }
+
+        Menu_SetupButtons(menu, 2, 90, 20, MENU_BG, MENU_TRIGGER_COLOR, 5, 7, 5, 1);
 
         render(app);
 
@@ -186,7 +185,7 @@ int Tick(APP *app) {
 
         static bool prev_rmb_state = 0;
         bool rmb_clicked = rmb_pressed && prev_rmb_state == 0;
-        if ( rmb_clicked ) {
+        if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_x, mouse_y) ) ) {
                 Menu_Move(menu, mouse_x, mouse_y, APP_WIDTH, APP_HEIGHT);
                 menu->active = 1;
                 changes = 1;
@@ -194,7 +193,7 @@ int Tick(APP *app) {
 
         changes = CheckMousePos(&points, mouse_x, mouse_y, lmb_pressed, prev_lmb_state, shift_pressed) || changes;
 
-        changes = Menu_CheckUpdate(menu, mouse_x, mouse_y, lmb_clicked) || changes;
+        changes = Menu_CheckUpdate(menu, mouse_x, mouse_y, lmb_clicked | rmb_clicked) || changes;
 
         prev_lmb_state = lmb_pressed;
         prev_rmb_state = rmb_pressed;

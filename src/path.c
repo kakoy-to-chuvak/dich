@@ -4,7 +4,7 @@
 #define SQ(x) ((x)*(x))
 #define UNDER_MOUSE(cords, mouse_x, mouse_y) ( SQ(mouse_x-cords.x) + SQ(mouse_y-cords.y) <= SQ(POINT_DIAMETR>>1) ) 
 
-#define FIX_CORD(x, r, app_x) (x - r < 0 ? r : (x + r > app_x ? app_x - r : x))
+#define FIX_CORD(x, app_x) (x < 0 ? 0 : (x > app_x ? app_x : x))
 #define FIX_LABEL_CORD(x, app_x, label_x) ( x + label_x + POINT_RADIUS > app_x - 5 ? x - label_x - POINT_RADIUS : x + POINT_RADIUS)
 
 
@@ -107,8 +107,8 @@ void MovePoint(Point *point, double x, double y, bool shift_pressed) {
         x += mouse_point_x;
         y += mouse_point_y;
 
-        x = FIX_CORD(x, POINT_RADIUS, APP_WIDTH);
-        y = FIX_CORD(y, POINT_RADIUS, APP_HEIGHT);
+        x = FIX_CORD(x, APP_WIDTH);
+        y = FIX_CORD(y, APP_HEIGHT);
 
         if ( shift_pressed ) {
                 if ( fabs(x-start_x) > fabs(y-start_y) )
@@ -224,7 +224,7 @@ bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pr
         for (int32_t i = 0 ; i < points->count ; i++ ) {
                 Point *now_point = points->points + i;
                 
-                if ( points->selected_point == NULL ) {
+                if ( points->selected_point == NULL && points->selected_line == NULL ) {
                         points_changed |= CheckPoint(points, now_point, mouse_x, mouse_y, mouse_pressed, prev_mouse_state);
                 }
 
