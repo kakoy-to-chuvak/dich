@@ -59,7 +59,10 @@ int render(APP *app) {
                 return 1;
         changes = 0;
         
+        LogDebug("render", "render");
+        
         SDL_RenderClear(app->Renderer);
+
         SDL_RenderTexture(app->Renderer, background_texture, NULL, NULL);
 
         RenderPath(app->Renderer, point_texture, &points, point_text);
@@ -106,14 +109,18 @@ int setup(APP *app) {
                 return 0;
         }
 
-        menu = Menu_New(app->Renderer, 
-                MENU_BG, 7, 0, MENU_BORDER_COLOR);
+
+
+        menu = Menu_New(app->Renderer, SDL_PIXELFORMAT_RGBA32,
+                MENU_BG, 7, 3, MENU_BORDER_COLOR);
         if ( NULL == menu ) {
                 LogError("setup", "Menu_New failed");
                 return 0;
         }
 
-        Menu_SetupButtons(menu, 2, 90, 20, MENU_BG, MENU_TRIGGER_COLOR, 5, 7, 5, 1);
+        Menu_SetupButtons(menu, 2, 90, 20, MENU_BG, MENU_TRIGGER_COLOR, 5, 10, 5, 1);      
+        
+        SDL_SetRenderDrawBlendMode(app->Renderer, SDL_BLENDMODE_BLEND);
 
         render(app);
 

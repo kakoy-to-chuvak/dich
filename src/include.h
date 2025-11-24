@@ -20,8 +20,8 @@
 #define TEXT_PARAMS ((LABEL_PARAMS){TEXT_BORDER_COLOR, 4})
 
 
-#define MENU_BG ((SDL_Color){31, 31, 31, 255})
-#define MENU_BORDER_COLOR ((SDL_Color){130, 130, 130, 255})
+#define MENU_BG ((SDL_Color){31, 31, 31, 120})
+#define MENU_BORDER_COLOR ((SDL_Color){255, 0, 0, 120})
 #define MENU_TRIGGER_COLOR ((SDL_Color){0, 123, 208, 255})
 
 

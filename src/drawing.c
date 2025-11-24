@@ -101,62 +101,58 @@ void RenderCircle(SDL_Renderer *renderer, float x0, float y0, float radius) {
 
 
 void Render_RounderRect(SDL_Renderer *renderer, SDL_FRect rect, float radius) {
-
+        
         SDL_FRect now_rect = {
-                rect.x + radius,
-                rect.y,
-                rect.w - 2 * radius,
-                rect.h
-        };
-
-        SDL_RenderFillRect(renderer, &now_rect);
-
-        now_rect = (SDL_FRect){
                 rect.x,
                 rect.y + radius,
-                radius,
+                rect.w,
                 rect.h - 2 * radius
         };
 
         SDL_RenderFillRect(renderer, &now_rect);
 
-        now_rect = (SDL_FRect){
-                rect.x + rect.w - radius,
-                rect.y + radius,
-                radius,
-                rect.h - 2 * radius
-        };
-
-        SDL_RenderFillRect(renderer, &now_rect);
-
-        float x_left = rect.x + radius;
-        float y_up = rect.y + radius;
-        float x_right = rect.x + rect.w - radius - 1;
-        float y_bottom = rect.y + rect.h - radius - 1;
+        if ( radius )
+                radius--;
+                
+        float x_l = rect.x + radius;
+        float y_u = rect.y + radius;
+        float x_r = rect.x + rect.w - radius - 1;
+        float y_b = rect.y + rect.h - radius - 1;
 
         float x = 0;
         float y = radius;
         float p = 1 - radius;
+
+        float y_next = p < 0 ? y : y - 1;
+        float p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
         
-        SDL_RenderLine(renderer, x_left - x, y_up - y, x_right + x, y_up - y);
-        SDL_RenderLine(renderer, x_left - x, y_bottom + y, x_right + x, y_bottom + y);
-        SDL_RenderLine(renderer, x_left - y, y_up - x, x_right + y, y_up - x);
-        SDL_RenderLine(renderer, x_left - y, y_bottom + x, x_right + y, y_bottom + x);
+        SDL_RenderLine(renderer, x_l - y, y_u - x, x_r + y, y_u - x);
+        SDL_RenderLine(renderer, x_l - y, y_b + x, x_r + y, y_b + x);
+        if ( y != y_next ) {      
+                SDL_RenderLine(renderer, x_l - x, y_u - y, x_r + x, y_u - y);
+                SDL_RenderLine(renderer, x_l + x, y_b - y, x_r + x, y_b + y);
+        }
                 
         while (x < y)
         {
-        	if (p < 0){
-                        p += 2 * x + 1;
-                        x++;
-                }else{
-                        p += 2 * (x - y) + 1;
-                        y--;
-                        x++;
+        	p = p_next;
+                y = y_next;
+                x++;
+
+                y_next = p < 0 ? y : y - 1;
+                p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
+
+                if ( x != y ) {
+                        SDL_RenderLine(renderer, x_l - y, y_u - x, x_r + y, y_u - x);
+                        SDL_RenderLine(renderer, x_l - y, y_b + x, x_r + y, y_b + x);
                 }
 
-                SDL_RenderLine(renderer, x_left - x, y_up - y, x_right + x, y_up - y);
-                SDL_RenderLine(renderer, x_left - x, y_bottom + y, x_right + x, y_bottom + y);
-                SDL_RenderLine(renderer, x_left - y, y_up - x, x_right + y, y_up - x);
-                SDL_RenderLine(renderer, x_left - y, y_bottom + x, x_right + y, y_bottom + x);
+                if ( y != y_next ) {
+                        SDL_RenderLine(renderer, x_l - x, y_u - y, x_r + x, y_u - y);
+                        SDL_RenderLine(renderer, x_l - x, y_b + y, x_r + x, y_b + y);
+                }
+                
         }
 }
+
+
