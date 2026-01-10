@@ -1,6 +1,9 @@
 #include "logs.h"
 
 
+#define FIX_LEVEL(level) ( level > 6 ? 0 : level )
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,8 +28,9 @@ static int logs_enabled = 1;
 static int colors_enabled = 0;
 
 // массивы наименований
-static LOG_COLOR level_colors[5] = {LOG_COLOR_White, LOG_COLOR_White, LOG_COLOR_Bright_White, LOG_COLOR_Bright_Yellow, LOG_COLOR_Bright_Red};
-static char *level_names[5] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR"};
+static LOG_COLOR level_colors[10] =     {   LOG_COLOR_White,   LOG_COLOR_White, LOG_COLOR_White, LOG_COLOR_White, LOG_COLOR_Bright_White, LOG_COLOR_Bright_Yellow, LOG_COLOR_Bright_Red};
+static char *level_names[10] =          {   "UNDEFINED",       "TRACE",         "DEBUG",         "NOTICE",        "INFO",                 "WARN",                  "ERROR"};
+// static FILE *level_streams[10] = { stdout, stdout, stdout, stdout, stdout, stdout, stdout };
 
 // API
 FILE* Logs_SetFile_name(const char* filename) {
@@ -97,10 +101,10 @@ int __Logs_LogArgs(const char* level, LOG_COLOR color, const char* module, const
                 sprintf_s(filename_buf, 300, " [%s:%d]", file, line);
         char color_buf[16] = "";
         if ( colors_enabled )
-                sprintf_s(color_buf, 15, "\033[%im", color);
+                sprintf_s(color_buf, 15, "\x1b[%im", color);
 
         // printing log
-        int res = fprintf(log_file, "%s[%s] [%s]%s [%s] %s%s\n", color_buf, timebuf, level, filename_buf, module, msgbuf, colors_enabled ? "\033[0m" : "");
+        int res = fprintf(log_file, "%s[%s] [%s]%s [%s] %s%s\n", color_buf, timebuf, level, filename_buf, module, msgbuf, colors_enabled ? "\x1b[0m" : "");
         fflush(log_file);
 
         log_mutex_unlock();
@@ -119,7 +123,7 @@ int Logs_Log(int level, const char *module, const char *file, int line, const ch
         if ( level < log_level ) return 0;
         va_list args;
         va_start(args, message_format);
-        int fixed_level = level < 5 ? level : 0;
+        int fixed_level = FIX_LEVEL(level);
         return __Logs_LogArgs(level_names[fixed_level], level_colors[fixed_level], module, file, line, message_format, args);
 }
 

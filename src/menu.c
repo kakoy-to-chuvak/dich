@@ -38,11 +38,11 @@ MENU *Menu_New( SDL_Renderer *renderer, SDL_PixelFormat pixel_format,
         menu->button_h = 0;
         menu->button_w = 0;
 
-        menu->button_indent_h = 0;
-        menu->button_indent_w = 0;
+        menu->button_indent_y = 0;
+        menu->button_indent_x = 0;
 
-        menu->text_indent_h = 0;
-        menu->text_indent_w = 0;
+        menu->text_indent_y = 0;
+        menu->text_indent_x = 0;
 
         menu->button_radius = 0;
 
@@ -75,7 +75,7 @@ bool Menu_MouseOut(MENU *menu, int32_t mouse_x, int32_t mouse_y) {
 
 
 
-bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
+bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click, void *function_args) {
         if ( NULL == menu || menu->active == 0 ) 
                 return 0;
         
@@ -88,8 +88,8 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
                 res = 1;
         }
 
-        int32_t now_y = menu->y + menu->button_indent_h;
-        int32_t button_x = menu->x + menu->button_indent_w;
+        int32_t now_y = menu->y + menu->button_indent_y;
+        int32_t button_x = menu->x + menu->button_indent_x;
         int32_t button_h = menu->button_h;
         int32_t button_w = menu->button_w;
 
@@ -103,6 +103,11 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
                         continue;
                 }
 
+                if ( now->active == 0 ) {
+                        now->triggered = 0;
+                        goto next;
+                }       
+
                 if ( mouse_x > button_x && mouse_x < button_x + button_w &&
                      mouse_y > now_y && mouse_y < now_y + button_h ) {
                         if ( now->triggered == 0 ) {
@@ -112,8 +117,9 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
 
                         if ( click ) {
                                 res = 1;
-                                if ( now->function )
-                                        now->function(menu);
+                                if ( now->function ) {
+                                        now->function(menu, function_args);
+                                }
                                 menu->active = 0;
                         }
                 } else {
@@ -123,6 +129,7 @@ bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click) {
                         }
                 }
 
+                next:
                 now = now->next;
                 now_y += menu->button_h;
         }
@@ -147,127 +154,7 @@ void Menu_Free(MENU *menu) {
 }
 
 
-//  ==== Render functions ====
-void __Menu_DrawButton(MENU *menu, int32_t x, int32_t y, SDL_Color color, LABEL *label) {
-        SDL_FRect rect = (SDL_FRect){
-                x, y,
-                menu->button_w,
-                menu->button_h
-        };
-
-        SDL_SetRenderDrawColor( menu->renderer, 
-                                color.r, color.g,
-                                color.b, color.a );
-
-        Render_RounderRect(menu->renderer, rect, menu->button_radius);
-
-        if ( label == NULL )
-                return;
-
-        float label_h = menu->button_h - 2 * menu->text_indent_h;
-        float label_w = label_h * label->rect.w / label->rect.h;
-        
-        SDL_FRect label_rect = (SDL_FRect){
-                rect.x + menu->text_indent_w,
-                rect.y + menu->text_indent_h,
-                label_w,
-                label_h
-        };
-
-        Label_Draw(label, NULL, &label_rect);
-}
-
-void __Menu_DrawBorder(SDL_Renderer *renderer, SDL_FRect rect, int32_t border_width, int32_t radius) {
-
-        SDL_FRect now_rect = {
-                rect.x,
-                rect.y + radius,
-                border_width,
-                rect.h - 2 * radius
-        };
-
-        SDL_RenderFillRect(renderer, &now_rect);
-        
-        now_rect = (SDL_FRect){
-                rect.x + radius,
-                rect.y,
-                rect.w - 2 * radius,
-                border_width
-        };
-
-        SDL_RenderFillRect(renderer, &now_rect);
-
-        now_rect = (SDL_FRect){
-                rect.x + radius,
-                rect.y + rect.h - border_width,
-                rect.w - 2 * radius,
-                border_width
-        };
-
-        SDL_RenderFillRect(renderer, &now_rect);
-
-        now_rect = (SDL_FRect){
-                rect.x + rect.w - border_width,
-                rect.y + radius,
-                border_width,
-                rect.h - 2 * radius
-        };
-
-        SDL_RenderFillRect(renderer, &now_rect);
-
-        // Circle midpoint algoritm
-        if ( radius )
-                radius--;
-
-        float x_left = rect.x + radius;
-        float y_up = rect.y + radius;
-        float x_right = rect.x + rect.w - radius - 1;
-        float y_bottom = rect.y + rect.h - radius - 1;
-
-        float x = 0;
-        float y = radius;
-        float p = 1 - radius;
-
-        float y_next = p < 0 ? y : y - 1;
-        float p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
-        
-        SDL_RenderLine(renderer, x_left - y, y_up - x, x_left, y_up - x);
-        SDL_RenderLine(renderer, x_right, y_up - x, x_right + y, y_up - x);
-        SDL_RenderLine(renderer, x_left - y, y_bottom + x, x_left, y_bottom + x);
-        SDL_RenderLine(renderer, x_right, y_bottom + x, x_right + y, y_bottom + x);
-        if ( y != y_next ) {   
-                SDL_RenderLine(renderer, x_left - x, y_up - y, x_left, y_up - y);
-                SDL_RenderLine(renderer, x_right, y_up - y, x_right + x, y_up - y);
-                SDL_RenderLine(renderer, x_left - x, y_bottom + y, x_left, y_bottom + y);
-                SDL_RenderLine(renderer, x_right, y_bottom + y, x_right + x, y_bottom + y);
-        }
-                
-        while (x < y)
-        {
-        	p = p_next;
-                y = y_next;
-                x++;
-
-                y_next = p < 0 ? y : y - 1;
-                p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
-
-                if ( x != y ) {
-                        SDL_RenderLine(renderer, x_left - y, y_up - x, x_left, y_up - x);
-                        SDL_RenderLine(renderer, x_right, y_up - x, x_right + y, y_up - x);
-                        SDL_RenderLine(renderer, x_left - y, y_bottom + x, x_left, y_bottom + x);
-                        SDL_RenderLine(renderer, x_right, y_bottom + x, x_right + y, y_bottom + x);
-                }
-
-                if ( y != y_next ) {
-                        SDL_RenderLine(renderer, x_left - x, y_up - y, x_left, y_up - y);
-                        SDL_RenderLine(renderer, x_right, y_up - y, x_right + x, y_up - y);
-                        SDL_RenderLine(renderer, x_left - x, y_bottom + y, x_left, y_bottom + y);
-                        SDL_RenderLine(renderer, x_right, y_bottom + y, x_right + x, y_bottom + y);
-                }
-                
-        }
-}
-
+//  ==== Render function ====
 void Menu_Render(MENU *menu) {
         if ( NULL == menu || menu->active == 0) 
                 return;
@@ -286,16 +173,16 @@ void Menu_Render(MENU *menu) {
                 SDL_RenderTexture(menu->renderer, menu->menu_texture, NULL, &rect);
 
         MENU_BUTTON *now = menu->buttons;
-        rect.x += menu->button_indent_w + menu->border_width;
-        rect.y += menu->button_indent_h + menu->border_width;
+        rect.x += menu->button_indent_x + menu->border_width;
+        rect.y += menu->button_indent_y + menu->border_width;
         rect.w = menu->button_w;
         rect.h = menu->button_h;
 
         SDL_FRect label_rect = (SDL_FRect){
-                rect.x + menu->text_indent_w,
-                rect.y + menu->text_indent_h,
+                rect.x + menu->text_indent_x,
+                rect.y + menu->text_indent_y,
                 0,
-                menu->button_h - 2 * menu->text_indent_h
+                menu->button_h - 2 * menu->text_indent_y
         };
 
         while ( now ) {
@@ -305,7 +192,7 @@ void Menu_Render(MENU *menu) {
                 SDL_RenderTexture(menu->renderer, now->triggered ? menu->trigger_texture : menu->button_texture, NULL, &rect);
 
                 if ( now->label ) {
-                        label_rect.w = rect.h * now->label->rect.w / now->label->rect.h;
+                        label_rect.w = label_rect.h * now->label->rect.w / now->label->rect.h;
                         Label_Draw(now->label, NULL, &label_rect);
                 } 
 
@@ -333,17 +220,17 @@ void Menu_SetupButtons( MENU *menu, float radius,
         menu->trigger_color = trigger_color;
         
         menu->w = width + 2 * indent_w;
-        menu->h = menu->h - 2 * menu->button_indent_h + menu->buttons_count * ( height - menu->button_h )+ 2 * indent_h;
+        menu->h = menu->h - 2 * menu->button_indent_y + menu->buttons_count * ( height - menu->button_h )+ 2 * indent_h;
 
         menu->button_h = height;
         menu->button_w = width;
 
 
-        menu->button_indent_h = indent_h;
-        menu->button_indent_w = indent_w;
+        menu->button_indent_y = indent_h;
+        menu->button_indent_x = indent_w;
 
-        menu->text_indent_h = text_indent_h;
-        menu->text_indent_w = text_indent_w;
+        menu->text_indent_y = text_indent_h;
+        menu->text_indent_x = text_indent_w;
 
         menu->button_radius = radius;
 
@@ -357,7 +244,9 @@ void Menu_SetupButtons( MENU *menu, float radius,
 MENU_BUTTON *Menu_SetButton(    MENU *menu, 
                                 int id,
                                 LABEL *label,
-                                void* (*function)(void*) 
+                                bool hide,
+                                bool active,
+                                void* (*function)(void*, void*) 
                         )
 {       
         MENU_BUTTON *button = Menu_GetButton(menu, id);
@@ -379,9 +268,10 @@ MENU_BUTTON *Menu_SetButton(    MENU *menu,
         }
         
         button->triggered = 0;
-        button->hide = 0;
+        button->hide = hide;
+        button->active = active;
 
-        button->function =  function;
+        button->function = function;
         button->label = label;  
 
         Menu_CreateMenuTexture(menu);
@@ -444,9 +334,8 @@ void Menu_HideButton(MENU *menu, MENU_BUTTON *button, bool hide) {
 
 
 
-
 // surface
-void Surface_DrawStraightLine(SDL_Surface *surf, int32_t x, int32_t y, int32_t len, Uint32 color) {
+void __Surface_DrawStraightLine(SDL_Surface *surf, int32_t x, int32_t y, int32_t len, Uint32 color) {
         SDL_Rect rect = (SDL_Rect){
                 x,
                 y,
@@ -508,44 +397,35 @@ void __Menu_FillSurfaceBorder(SDL_Surface *surf, Uint32 w, Uint32 h, int32_t bor
         float x = 0;
         float y = radius;
         float p = 1 - radius;
-
-        float y_next = p < 0 ? y : y - 1;
-        float p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
         
-        Surface_DrawStraightLine(surf, x_left - y, y_up - x, y, color);
-        Surface_DrawStraightLine(surf, x_right + 1, y_up - x, y, color);
-        Surface_DrawStraightLine(surf, x_left - y, y_bottom + x, y, color);
-        Surface_DrawStraightLine(surf, x_right + 1, y_bottom + x, y, color);
-        if ( y != y_next ) {   
-                Surface_DrawStraightLine(surf, x_left - x, y_up - y, x, color);
-                Surface_DrawStraightLine(surf, x_right + 1, y_up - y, x, color);
-                Surface_DrawStraightLine(surf, x_left - x, y_bottom + y, x, color);
-                Surface_DrawStraightLine(surf, x_right + 1, y_bottom + y, x, color);
-        }
+        __Surface_DrawStraightLine(surf, x_left - y, y_up - x, y, color);
+        __Surface_DrawStraightLine(surf, x_right + 1, y_up - x, y, color);
+        __Surface_DrawStraightLine(surf, x_left - y, y_bottom + x, y, color);
+        __Surface_DrawStraightLine(surf, x_right + 1, y_bottom + x, y, color);
+        __Surface_DrawStraightLine(surf, x_left - x, y_up - y, x, color);
+        __Surface_DrawStraightLine(surf, x_right + 1, y_up - y, x, color);
+        __Surface_DrawStraightLine(surf, x_left - x, y_bottom + y, x, color);
+        __Surface_DrawStraightLine(surf, x_right + 1, y_bottom + y, x, color);
                 
         while (x < y)
         {
-        	p = p_next;
-                y = y_next;
-                x++;
-
-                y_next = p < 0 ? y : y - 1;
-                p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
-
-                if ( x != y ) {
-                        Surface_DrawStraightLine(surf, x_left - y, y_up - x, y, color);
-                        Surface_DrawStraightLine(surf, x_right + 1, y_up - x, y, color);
-                        Surface_DrawStraightLine(surf, x_left - y, y_bottom + x, y, color);
-                        Surface_DrawStraightLine(surf, x_right + 1, y_bottom + x, y, color);
-                }
-
-                if ( y != y_next ) {
-                        Surface_DrawStraightLine(surf, x_left - x, y_up - y, x, color);
-                        Surface_DrawStraightLine(surf, x_right + 1, y_up - y, x, color);
-                        Surface_DrawStraightLine(surf, x_left - x, y_bottom + y, x, color);
-                        Surface_DrawStraightLine(surf, x_right + 1, y_bottom + y, x, color);
+        	if ( p < 0 ) {
+                        p = p + 2 * x + 1;
+                } else {
+                        p = p + 2 * ( x - y ) + 1;
+                        y--;
                 }
                 
+                x++;
+
+                __Surface_DrawStraightLine(surf, x_left - y, y_up - x, y, color);
+                __Surface_DrawStraightLine(surf, x_right + 1, y_up - x, y, color);
+                __Surface_DrawStraightLine(surf, x_left - y, y_bottom + x, y, color);
+                __Surface_DrawStraightLine(surf, x_right + 1, y_bottom + x, y, color);
+                __Surface_DrawStraightLine(surf, x_left - x, y_up - y, x, color);
+                __Surface_DrawStraightLine(surf, x_right + 1, y_up - y, x, color);
+                __Surface_DrawStraightLine(surf, x_left - x, y_bottom + y, x, color);
+                __Surface_DrawStraightLine(surf, x_right + 1, y_bottom + y, x, color);   
         }
 }
 
@@ -561,8 +441,6 @@ void __Menu_SurfaceFillRect(SDL_Surface *surf, SDL_Rect rect, int32_t radius, Ui
 
         SDL_FillSurfaceRect(surf, &now_rect, color);
 
-        if ( radius )
-                radius--;
         float x_l = rect.x + radius;
         float y_u = rect.y + radius;
         float x_r = rect.w -  2 * radius;
@@ -572,37 +450,26 @@ void __Menu_SurfaceFillRect(SDL_Surface *surf, SDL_Rect rect, int32_t radius, Ui
         float y = radius;
         float p = 1 - radius;
 
-        float y_next = p < 0 ? y : y - 1;
-        float p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
-        
-        Surface_DrawStraightLine(surf, x_l - y, y_u - x, x_r + 2 * y, color);
-        Surface_DrawStraightLine(surf, x_l - y, y_b + x, x_r + 2 * y, color);
-
-        if ( y != y_next ) {
-                
-                Surface_DrawStraightLine(surf, x_l - x, y_u - y, x_r + 2 * x, color);
-                Surface_DrawStraightLine(surf, x_l - x, y_b + y, x_r + 2 * x, color);
-        }
+        __Surface_DrawStraightLine(surf, x_l - y, y_u - x, x_r + 2 * y, color);
+        __Surface_DrawStraightLine(surf, x_l - y, y_b + x, x_r + 2 * y, color);
+        __Surface_DrawStraightLine(surf, x_l - x, y_u - y, x_r + 2 * x, color);
+        __Surface_DrawStraightLine(surf, x_l - x, y_b + y, x_r + 2 * x, color);
                 
         while (x < y)
-        {
-        	p = p_next;
-                y = y_next;
+        {       
+                if ( p < 0 ) {
+                        p = p + 2 * x + 1;
+                } else {
+                        p = p + 2 * ( x - y ) + 1;
+                        y--;
+                }
+
                 x++;
-
-                y_next = p < 0 ? y : y - 1;
-                p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
-
-                if ( x != y ) {
-                        Surface_DrawStraightLine(surf, x_l - y, y_u - x, x_r + 2 * y, color);
-                        Surface_DrawStraightLine(surf, x_l - y, y_b + x, x_r + 2 * y, color);
-                }
-
-                if ( y != y_next ) {
-                        Surface_DrawStraightLine(surf, x_l - x, y_u - y, x_r + 2 * x, color);
-                        Surface_DrawStraightLine(surf, x_l - x, y_b + y, x_r + 2 * x, color);
-                }
-                
+ 
+                __Surface_DrawStraightLine(surf, x_l - y, y_u - x, x_r + 2 * y, color);
+                __Surface_DrawStraightLine(surf, x_l - y, y_b + x, x_r + 2 * y, color);
+                __Surface_DrawStraightLine(surf, x_l - x, y_u - y, x_r + 2 * x, color);
+                __Surface_DrawStraightLine(surf, x_l - x, y_b + y, x_r + 2 * x, color);
         }
 }
 
@@ -618,7 +485,8 @@ SDL_Texture *Menu_CreateMenuTexture(MENU *menu) {
 
         Uint32 color = SDL_MapRGBA(SDL_GetPixelFormatDetails(menu->pixel_format), NULL, menu->border_color.r, menu->border_color.g, menu->border_color.b, menu->border_color.a);
         
-        __Menu_FillSurfaceBorder(surf, menu->w + 2 * menu->border_width, menu->h + 2 * menu->border_width, menu->border_width, menu->border_radius, color);
+        if ( menu->border_width )
+                __Menu_FillSurfaceBorder(surf, menu->w + 2 * menu->border_width, menu->h + 2 * menu->border_width, menu->border_width, menu->border_radius, color);
         
         SDL_Rect tmp = (SDL_Rect){
                 menu->border_width,
@@ -647,7 +515,7 @@ bool Menu_CreateButtonTexture(MENU *menu) {
         if ( surf == NULL )
                 return NULL;
 
-        SDL_Rect tmp = (SDL_Rect){
+        SDL_Rect rect = (SDL_Rect){
                 0,
                 0,
                 menu->button_w,
@@ -655,16 +523,20 @@ bool Menu_CreateButtonTexture(MENU *menu) {
         };
 
         // button texture
-        Uint32 color = SDL_MapRGBA(SDL_GetPixelFormatDetails(menu->pixel_format), NULL, menu->button_bg_color.r, menu->button_bg_color.g, menu->button_bg_color.b, menu->button_bg_color.a);
+        Uint32 color = SDL_MapRGBA( SDL_GetPixelFormatDetails(menu->pixel_format), NULL, 
+                                    menu->button_bg_color.r, menu->button_bg_color.g, 
+                                    menu->button_bg_color.b, menu->button_bg_color.a);
 
-        __Menu_SurfaceFillRect(surf, tmp, menu->border_radius, color);
+        __Menu_SurfaceFillRect(surf, rect, menu->button_radius, color);
 
         menu->button_texture = SDL_CreateTextureFromSurface(menu->renderer, surf);
 
         // trigger texture
-        color = SDL_MapRGBA(SDL_GetPixelFormatDetails(menu->pixel_format), NULL, menu->trigger_color.r, menu->trigger_color.g, menu->trigger_color.b, menu->trigger_color.a);
+        color = SDL_MapRGBA( SDL_GetPixelFormatDetails(menu->pixel_format), NULL, 
+                             menu->trigger_color.r, menu->trigger_color.g, 
+                             menu->trigger_color.b, menu->trigger_color.a);
 
-        __Menu_SurfaceFillRect(surf, tmp, menu->border_radius, color);
+        __Menu_SurfaceFillRect(surf, rect, menu->button_radius, color);
 
         menu->trigger_texture = SDL_CreateTextureFromSurface(menu->renderer, surf);
 

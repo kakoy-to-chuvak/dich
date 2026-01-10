@@ -7,13 +7,12 @@
 #include <SDL3/SDL.h>
 
 #include "include.h"
-#include "points.h"
+#include "vectors.h"
 #include "drawing.h"
 #include "label.h"
 
 
 
-#define LINE_RADIUS 5
 
 typedef enum PState {
         UNDEFINED = -1,
@@ -26,21 +25,21 @@ typedef struct Point {
         SDL_FPoint cords;
         PState state;
         PState line_state;
-        // bool changed;
+        struct Point *next;
 } Point;
 
 typedef struct PArray {
-        Point points[MAX_POINTS];
+        Point *points;
         Point *selected_point;
         Point *selected_line;
-        int32_t count;
 } PArray;
 
 
 
 void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label);
 bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed);
-
+void AddPoint(PArray *points, double x, double y, Point *line);
+void DelPoint(PArray *points, Point *point);
 
 
 

@@ -20,10 +20,11 @@ typedef struct MENU_BUTTON {
         int id;
 
         bool hide;
+        bool active;
         bool triggered;
 
         LABEL *label;
-        void* (*function)(void *args);
+        void* (*function)(void *menu, void *args);
 
         struct MENU_BUTTON *next;
         struct MENU_BUTTON *prev;
@@ -57,13 +58,13 @@ typedef struct MENU {
         SDL_Color button_bg_color;
         SDL_Color trigger_color;
 
-        int32_t text_indent_w;
-        int32_t text_indent_h;
+        int32_t text_indent_x;
+        int32_t text_indent_y;
 
         int32_t button_w;
         int32_t button_h;
-        int32_t button_indent_w;
-        int32_t button_indent_h;
+        int32_t button_indent_x;
+        int32_t button_indent_y;
         float button_radius;
 } MENU;
 
@@ -73,7 +74,7 @@ MENU *Menu_New( SDL_Renderer *renderer, SDL_PixelFormat pixel_format,
                 int32_t border, SDL_Color border_color );
 void Menu_Move(MENU *menu, float x, float y, float window_w, float window_h);
 bool Menu_MouseOut(MENU *menu, int32_t mouse_x, int32_t mouse_y);
-bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click);
+bool Menu_CheckUpdate(MENU *menu, float mouse_x, float mouse_y, bool click, void *function_args);
 void Menu_Free(MENU *menu);
 
 
@@ -88,8 +89,12 @@ void Menu_SetupButtons( MENU *menu, float radius,
                 
 
 
-MENU_BUTTON *Menu_SetButton(    MENU *menu, int id,
-                                LABEL *label, void* (*function)(void*) );
+MENU_BUTTON *Menu_SetButton(    MENU *menu, 
+                                int id,
+                                LABEL *label,
+                                bool hide,
+                                bool active,
+                                void* (*function)(void*, void*) );
 
 MENU_BUTTON *Menu_GetButton(MENU *menu, int id);
 bool Menu_DelButton(MENU *menu, MENU_BUTTON *button);

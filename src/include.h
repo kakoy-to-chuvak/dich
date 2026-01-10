@@ -14,13 +14,15 @@
 
 #define TEXT_SIZE (30)
 
-#define TEXT_COLOR_FG ((SDL_Color){0, 0, 0, 255})
-#define TEXT_BORDER_COLOR ((SDL_Color){255, 255, 255, 255})
+#define TEXT_COLOR_Black ((SDL_Color){0, 0, 0, 255})
+#define TEXT_COLOR_BrightWhite ((SDL_Color){255, 255, 255, 255})
+#define TEXT_COLOR_White ((SDL_Color){222, 222, 222, 255})
+#define TEXT_COLOR_Grey ((SDL_Color){128, 128, 128, 255})
 
-#define TEXT_PARAMS ((LABEL_PARAMS){TEXT_BORDER_COLOR, 4})
+#define TEXT_PARAMS ((LABEL_PARAMS){TEXT_COLOR_White, 2})
 
 
-#define MENU_BG ((SDL_Color){31, 31, 31, 120})
+#define MENU_BG ((SDL_Color){31, 31, 31, 255})
 #define MENU_BORDER_COLOR ((SDL_Color){255, 0, 0, 120})
 #define MENU_TRIGGER_COLOR ((SDL_Color){0, 123, 208, 255})
 
@@ -28,8 +30,11 @@
 #define POINT_DIAMETR 31
 #define POINT_RADIUS (POINT_DIAMETR / 2)
 
+#define LINE_RADIUS 6
+#define ARROW_BASE 24
 
 
+// 90°  (ALT248)
 
 
 

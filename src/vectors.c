@@ -1,56 +1,56 @@
-#include "points.h"
+#include "vectors.h"
 
 
-SDL_FPoint Point_Sum(SDL_FPoint P1, SDL_FPoint P2) {
+SDL_FPoint Vector_Sum(SDL_FPoint P1, SDL_FPoint P2) {
         return (SDL_FPoint){ 
                 P1.x + P2.x, 
                 P1.y + P2.y 
         };
 }
 
-SDL_FPoint Point_Sub(SDL_FPoint P1, SDL_FPoint P2) {
+SDL_FPoint Vector_Sub(SDL_FPoint P1, SDL_FPoint P2) {
         return (SDL_FPoint){ 
                 P1.x - P2.x, 
                 P1.y - P2.y 
         };
 }
 
-double Point_SclMult(SDL_FPoint P1, SDL_FPoint P2) {
+double Vector_SclMult(SDL_FPoint P1, SDL_FPoint P2) {
         return P1.x * P2.x + P1.y * P2.y;
 }
 
-SDL_FPoint Point_Mult(SDL_FPoint P1, double k) {
+SDL_FPoint Vector_Mult(SDL_FPoint P1, double k) {
         return (SDL_FPoint){
                 P1.x * k, 
                 P1.y * k 
         };
 }
 
-SDL_FPoint Point_Div(SDL_FPoint P1, double k) {
+SDL_FPoint Vector_Div(SDL_FPoint P1, double k) {
         return (SDL_FPoint){ 
                 P1.x / k, 
                 P1.y / k 
         };
 }
 
-double Point_Abs(SDL_FPoint P) {
+double Vector_Abs(SDL_FPoint P) {
         return sqrt( P.x * P.x + P.y * P.y );
 }
 
-double Point_SqAbs(SDL_FPoint P) {
+double Vector_SqAbs(SDL_FPoint P) {
         return P.x * P.x + P.y * P.y;
 }
 
-SDL_FPoint Point_Norm(SDL_FPoint P) {
-        return Point_Div(P, Point_Abs(P));
+SDL_FPoint Vector_Norm(SDL_FPoint P) {
+        return Vector_Div(P, Vector_Abs(P));
 }
 
-double Point_Cos(SDL_FPoint P1, SDL_FPoint P2) {
-        return Point_SclMult(P1, P2) / ( Point_Abs(P1) * Point_Abs(P2) );
+double Vector_Cos(SDL_FPoint P1, SDL_FPoint P2) {
+        return Vector_SclMult(P1, P2) / ( Vector_Abs(P1) * Vector_Abs(P2) );
 }
 
 
-SDL_FPoint Point_Rotate(SDL_FPoint P, double rad) {
+SDL_FPoint Vector_Rotate(SDL_FPoint P, double rad) {
         double _Cos = cos(rad);
         double _Sin = sin(rad);
         return (SDL_FPoint){
@@ -59,28 +59,28 @@ SDL_FPoint Point_Rotate(SDL_FPoint P, double rad) {
         };
 }
 
-SDL_FPoint Point_Rotate180(SDL_FPoint P) {
+SDL_FPoint Vector_Rotate180(SDL_FPoint P) {
         return (SDL_FPoint) {
                 -P.x,
                 -P.y
         };
 }
 
-SDL_FPoint Point_Rotate90(SDL_FPoint P) {
+SDL_FPoint Vector_Rotate90(SDL_FPoint P) {
         return (SDL_FPoint) {
                 -P.y,
                 P.x
         };
 }
 
-SDL_FPoint Point_Rotate90m(SDL_FPoint P) {
+SDL_FPoint Vector_Rotate90m(SDL_FPoint P) {
         return (SDL_FPoint) {
                 P.y,
                 -P.x
         };
 }
 
-SDL_FPoint Point_Invert(SDL_FPoint P) {
+SDL_FPoint Vector_Invert(SDL_FPoint P) {
         return (SDL_FPoint) {
                 -P.x,
                 -P.y

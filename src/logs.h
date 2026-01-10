@@ -19,12 +19,12 @@
 extern "C" {
 #endif
 
-
-#define LOG_LEVEL_TRACE     (0)
-#define LOG_LEVEL_DEBUG     (1)
-#define LOG_LEVEL_INFO      (2)
-#define LOG_LEVEL_WARN      (3)
-#define LOG_LEVEL_ERROR     (4)
+#define LOG_LEVEL_TRACE     (1)
+#define LOG_LEVEL_DEBUG     (2)
+#define LOG_LEVEL_NOTICE    (3)
+#define LOG_LEVEL_INFO      (4)
+#define LOG_LEVEL_WARN      (5)
+#define LOG_LEVEL_ERROR     (6)
 
 
 #define LOG_COLOR_Black           ((LOG_COLOR)(30))  
