@@ -6,7 +6,7 @@ SRCS=$(wildcard $(SRC_DIR)/*.c)
 HEADERS=$(SRCS:%.c=%.h)
 
 
-$(BUILD_DIR)/$(TARGET_EXEC): $(SRCS)
+$(BUILD_DIR)/$(TARGET_EXEC): $(SRCS) $(HEADERS)
 	@echo on
 	@echo $(SRCS)
 	@echo $(HEADERS)
