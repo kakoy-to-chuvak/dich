@@ -15,18 +15,18 @@ SDL_FPoint Vector_Sub(SDL_FPoint P1, SDL_FPoint P2) {
         };
 }
 
-double Vector_SclMult(SDL_FPoint P1, SDL_FPoint P2) {
+double Vector_DotProd(SDL_FPoint P1, SDL_FPoint P2) {
         return P1.x * P2.x + P1.y * P2.y;
 }
 
-SDL_FPoint Vector_Mult(SDL_FPoint P1, double k) {
+SDL_FPoint Vector_Mult_scl(SDL_FPoint P1, double k) {
         return (SDL_FPoint){
                 P1.x * k, 
                 P1.y * k 
         };
 }
 
-SDL_FPoint Vector_Div(SDL_FPoint P1, double k) {
+SDL_FPoint Vector_Divscl(SDL_FPoint P1, double k) {
         return (SDL_FPoint){ 
                 P1.x / k, 
                 P1.y / k 
@@ -42,11 +42,11 @@ double Vector_SqAbs(SDL_FPoint P) {
 }
 
 SDL_FPoint Vector_Norm(SDL_FPoint P) {
-        return Vector_Div(P, Vector_Abs(P));
+        return Vector_Divscl(P, Vector_Abs(P));
 }
 
 double Vector_Cos(SDL_FPoint P1, SDL_FPoint P2) {
-        return Vector_SclMult(P1, P2) / ( Vector_Abs(P1) * Vector_Abs(P2) );
+        return Vector_DotProd(P1, P2) / ( Vector_Abs(P1) * Vector_Abs(P2) );
 }
 
 

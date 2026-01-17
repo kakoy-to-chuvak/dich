@@ -21,7 +21,7 @@ void _RenderPointCords(Point *point, LABEL *label) {
                 return;
 
         char point_text[32];
-        sprintf_s(point_text, sizeof(point_text), "(%.0f, %.0f)", point->cords.x, point->cords.y);
+        snprintf(point_text, sizeof(point_text), "(%.0f, %.0f)", point->cords.x, point->cords.y);
         Label_Update(label, point_text, TEXT_COLOR_Black);
 
         SDL_FRect label_rect = {
@@ -123,9 +123,9 @@ void MovePoint(Point *point, double x, double y, bool shift_pressed) {
 
 
 bool TouchLine(SDL_FPoint P1, SDL_FPoint P2, SDL_FPoint M, float line_r, float point_r) {
-        SDL_FPoint A = Vector_Sub(M, P2);
-        SDL_FPoint B = Vector_Sub(M, P1);
-        SDL_FPoint C = Vector_Sub(P1, P2);
+        SDL_FPoint A = Vector_Sub(M, P1);
+        SDL_FPoint B = Vector_Sub(M, P2);
+        SDL_FPoint C = Vector_Sub(P2, P1);
 
         float SqAbs_A = Vector_SqAbs(A);
         float SqAbs_B = Vector_SqAbs(B);
@@ -135,11 +135,9 @@ bool TouchLine(SDL_FPoint P1, SDL_FPoint P2, SDL_FPoint M, float line_r, float p
         if ( SqAbs_A >= SqAbs_C || SqAbs_B >= SqAbs_C || SqAbs_A <= sq_point_r || SqAbs_B <= sq_point_r )
                 return 0;
 
-        double p_scl = Vector_SclMult(A, C);
+        double tmp = A.x * C.y - A.y * C.x;
 
-        double h2 = Vector_SqAbs(A) - ( p_scl * p_scl ) / SqAbs_C;
-        
-        return h2 <= line_r * line_r;
+        return tmp * tmp / SqAbs_C <= line_r * line_r;
 
 }
 
@@ -249,10 +247,10 @@ void AddPoint(PArray *points, double x, double y, Point *line) {
                 SDL_FPoint ac = Vector_Sub( (SDL_FPoint){x, y}, line->cords );
                 SDL_FPoint ab = Vector_Sub( line->next->cords, line->cords );
 
-                double k = Vector_SclMult(ac, ab);
+                double k = Vector_DotProd(ac, ab);
                 k /= Vector_SqAbs(ab);
 
-                SDL_FPoint result = Vector_Mult(ab, k);
+                SDL_FPoint result = Vector_Mult_scl(ab, k);
                 result = Vector_Sum(line->cords, result);
 
                 new->cords = result;

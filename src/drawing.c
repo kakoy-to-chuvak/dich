@@ -38,7 +38,7 @@ void RenderLine(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, int32_t ra
 void RenderArrow(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, double base, SDL_FColor arrow_color) {
         SDL_FPoint Pa = Vector_Norm( Vector_Sub(P1, P0) );
 
-        P1 = Vector_Sub(P1, Vector_Mult(Pa, POINT_RADIUS + base));
+        P1 = Vector_Sub(P1, Vector_Mult_scl(Pa, POINT_RADIUS + base));
 
         SDL_Vertex vertex[3];
 
@@ -46,7 +46,7 @@ void RenderArrow(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, double ba
         vertex[1].color = arrow_color;
         vertex[2].color = arrow_color;
 
-        Pa = Vector_Mult(Pa, base);
+        Pa = Vector_Mult_scl(Pa, base);
         vertex[0].position = Vector_Sum(P1, Pa);
 
         Pa = Vector_Rotate90(Pa);

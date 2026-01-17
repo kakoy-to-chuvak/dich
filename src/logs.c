@@ -98,10 +98,10 @@ int __Logs_LogArgs(const char* level, LOG_COLOR color, const char* module, const
 
         char filename_buf[300];
         if ( file ) 
-                sprintf_s(filename_buf, 300, " [%s:%d]", file, line);
+                snprintf(filename_buf, 300, " [%s:%d]", file, line);
         char color_buf[16] = "";
         if ( colors_enabled )
-                sprintf_s(color_buf, 15, "\x1b[%im", color);
+                snprintf(color_buf, 15, "\x1b[%im", color);
 
         // printing log
         int res = fprintf(log_file, "%s[%s] [%s]%s [%s] %s%s\n", color_buf, timebuf, level, filename_buf, module, msgbuf, colors_enabled ? "\x1b[0m" : "");
@@ -128,37 +128,6 @@ int Logs_Log(int level, const char *module, const char *file, int line, const ch
 }
 
 
-
-#ifdef __LOGS_TEST__
-int main() {
-        Logs_EnableColors(1);
-        for ( int i = 0 ; i < 6 ; i++ ) {
-                Logs_SetLogLevel(i);
-                LogCustom_wf("CHANGE", LOG_COLOR_Bright_Green, "main", "new level: %i", i);
-                for ( int j = 0 ; j < 5 ; j++ )
-                        Log(j, "main", "test message %i %s", j, "something");
-        }
-        
-        LogCustom("CUSTOM", LOG_COLOR_Bright_Cyan, "main", "test custom %i", 10);
-        LogCustom_wf("CUSTOM", LOG_COLOR_Bright_Magenta, "main", "test custom %i", 10);
-
-        // speed test
-        Logs_SetLogLevel(-1);
-        LogInfo("speed-test", "start speed test");
-        Logs_SetFile("speed-test.logs");
-        clock_t end;
-        LogInfo("speed-test", "speed tets started");
-        clock_t start = clock();
-        for ( int i = 0 ; i < 1000000 ; i++ ) {
-                LogTrace("speed-test", "random not so long string with random format: %s %i. Just random symbols: hunrnhgimurkigcl,hergh5e8m98xp4mh85yrgu589gu54vguv85g9845ugk0hergh5e8m98xp4mh85yrgu589gu54vguv85g9845ugk0hergh5e8m98xp4mh85yrgu589gu54vguv85g9845ugk0hergh5e8m98xp4mh85yrgu589gu54vguv85g9845ugk0hergh5e8m98xp4mh85yrgu589gu54vguv85g9845ugk0hergh5e8m98xp4mh85yrgu589gu54vguv85g9845ugk0hergh5e8m98xp4mh85yrgu589gu54vguv85g9845ugk0-x5,40-gu8809guv0p8og9v,jg", "random message", i);
-        }
-        end = clock();
-        double result = ((double)(end-start))/CLOCKS_PER_SEC;
-        Logs_SetFile(stdout);
-        LogInfo("speed-test", "logged 1m logs in %f seconds. Spent %fms per log. Speed: %f logs per second", result, result/1000, 1000000/result);
-        return 0;
-}
-#endif // __LOGS_TEST__
 
 #ifdef __cplusplus
 }

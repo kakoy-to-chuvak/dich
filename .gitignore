@@ -1,3 +1,2 @@
-*.exe
-SDL3*.dll
+build/*
 .vscode/*

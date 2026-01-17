@@ -64,11 +64,13 @@ APP *AppNew(const char *title, int width, int height, SDL_WindowFlags window_fla
         return app;
 
         failure4:
-        if ( icon ) SDL_DestroySurface(app->Properties.Icon);
+        if ( icon ) 
+                SDL_DestroySurface(app->Properties.Icon);
         failure3:
         SDL_DestroyWindow(app->Window);
         failure2:
-        if ( title ) free(app->Properties.Title);
+        if ( title ) 
+                free(app->Properties.Title);
         failure1:
         free(app);
         failure0:
@@ -106,7 +108,7 @@ int AppMainloop(APP *app) {
                         if ( RenderTick )
                                 RenderTick(app);
                 }
-                Sleep(1);
+                CRP_sleep(1);
         }
 
         LogDebug("AppMainloop", "return");
