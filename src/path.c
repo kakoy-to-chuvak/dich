@@ -305,6 +305,7 @@ void AddPoint_tostart(PArray *points, double x, double y) {
 
         new->next = points->points;
         points->points = new;
+        new->next->prev = new;
 }
 
 void DelPoint(PArray *points, Point *point) {

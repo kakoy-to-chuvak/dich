@@ -239,7 +239,7 @@ int Tick(APP *app) {
         bool rmb_clicked = rmb_pressed && prev_rmb_state == 0;
 
         
-        changes = CheckMousePos(&points, mouse_x, mouse_y, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed) || changes;
+        changes |= CheckMousePos(&points, mouse_x, mouse_y, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed);
         
         static Point *to_change = NULL;
         if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_x, mouse_y) ) ) {
@@ -257,7 +257,7 @@ int Tick(APP *app) {
                 }
         }
 
-        changes = Menu_CheckUpdate(menu, mouse_x, mouse_y, lmb_clicked | rmb_clicked, to_change) || changes;
+        changes |= Menu_CheckUpdate(menu, mouse_x, mouse_y, lmb_clicked | rmb_clicked, to_change);
 
         prev_lmb_state = lmb_pressed;
         prev_rmb_state = rmb_pressed;
