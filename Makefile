@@ -8,6 +8,8 @@ SDL_LIBS_DIR=C:/SDL/x86_64-w64-mingw32/lib
 
 SDL_LIBS_EXTENSION=.dll.a
 
+
+
 SRCS=$(wildcard $(SRC_DIR)/*.c)
 HEADERS=$(wildcard $(SRC_DIR)/*.h)
 

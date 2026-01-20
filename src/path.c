@@ -103,22 +103,30 @@ void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *poin
 
 
 
-void MovePoint(Point *point, double x, double y, bool shift_pressed) {
+void MovePoint(Point *point, double x, double y, bool shift_pressed, bool ctrl_pressed) {
         x += mouse_point_x;
         y += mouse_point_y;
-
+        
         x = FIX_CORD(x, APP_WIDTH);
         y = FIX_CORD(y, APP_HEIGHT);
 
+        SDL_FPoint mouse_cord = (SDL_FPoint){ x, y };
+
         if ( shift_pressed ) {
-                if ( fabs(x-start_x) > fabs(y-start_y) )
-                        y = start_y;
-                else
-                        x = start_x;
+                if ( fabs(x-start_x) > fabs(y-start_y) ) {
+                        mouse_cord.y = start_y;
+                } else {
+                        mouse_cord.x = start_x;
+                }
+        } else if ( ctrl_pressed && point->prev && point->next ) {
+                SDL_FPoint P1M = Vector_Sub(mouse_cord, point->prev->cords);
+                SDL_FPoint P1P2 = Vector_Sub(point->next->cords, point->prev->cords);
+
+                float k = Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
+                mouse_cord = Vector_Sum(point->prev->cords, Vector_Mult_scl(P1P2, k));
         }
 
-        point->cords.x = x;
-        point->cords.y = y;
+        point->cords = mouse_cord;
 }
 
 
@@ -193,13 +201,13 @@ bool CheckPoint(PArray *points, Point *point, double mouse_x, double mouse_y, bo
 }
 
 
-bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed) {
+bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed) {
         bool points_changed = 0;
 
         if ( points->selected_point ) {
                 points->selected_line = NULL;
                 if ( points->selected_point->state == SELECTED && mouse_pressed ) {
-                        MovePoint(points->selected_point, mouse_x, mouse_y, shift_pressed);
+                        MovePoint(points->selected_point, mouse_x, mouse_y, shift_pressed, ctrl_pressed);
                 } else {
                         points->selected_point->state = NONE_STATE;
                         points->selected_point = NULL;
@@ -237,9 +245,14 @@ bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pr
 
 void AddPoint(PArray *points, double x, double y, Point *line) {
         Point *new = malloc(sizeof(Point));
+        if ( new == NULL ) {
+                LogError("AddPoint", "couldn`n allocate memory");
+        }
+
         *new = (Point){
                 { x, y }, 
                 NONE_STATE, NONE_STATE,
+                NULL,
                 NULL
         };
 
@@ -256,6 +269,8 @@ void AddPoint(PArray *points, double x, double y, Point *line) {
                 new->cords = result;
 
                 new->next = line->next;
+                new->prev = line;
+                line->next->prev = new;
                 line->next = new;
                 
                 return;
@@ -272,22 +287,36 @@ void AddPoint(PArray *points, double x, double y, Point *line) {
         }
 
         now->next = new;
+        new->prev = now;
 }
 
+void AddPoint_tostart(PArray *points, double x, double y) {
+        Point *new = malloc(sizeof(Point));
+        if ( new == NULL ) {
+                LogError("AddPoint", "couldn`n allocate memory");
+        }
+
+        *new = (Point){
+                { x, y }, 
+                NONE_STATE, NONE_STATE,
+                NULL,
+                NULL
+        }; 
+
+        new->next = points->points;
+        points->points = new;
+}
 
 void DelPoint(PArray *points, Point *point) {
-        Point *now = points->points;
-
-        if ( now == point ) {
-                points->points = now->next;
-                free(now);
-                return;
-        }
-        
-        while ( now->next != point ) {
-                now = now->next;
+        if ( point->prev ) {
+                point->prev->next = point->next;
+        } else {
+                points->points = point->next;
         }
 
-        now->next = point->next;
+        if ( point->next ) {
+                point->next->prev = point->prev;
+        }
+
         free(point);
 }

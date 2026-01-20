@@ -61,14 +61,10 @@ void *Menu_DelPoint(void *menu, void *v_point) {
         return menu;
 }
 
-void *Menu_DuplicatePoint(void *menu, void *v_point) {
-        Point *point = (Point*)v_point;
-        Point *copy = malloc(sizeof(Point));
-        copy->cords = Vector_Sum(point->cords, (SDL_FPoint){40, 40});
-        copy->next = point->next;
-        point->next = copy;
+void *Menu_AddPointToStart(void *menu, void *v_point) {
+        AddPoint_tostart(&points, ((MENU*)menu)->x, ((MENU*)menu)->y);
 
-        return menu;
+        return v_point;
 }
 
 
@@ -135,18 +131,19 @@ int setup(APP *app) {
                 LogError("setup", "Label_New failed");
                 return 0;
         }
-
-        menu_labels[1] = Label_New(app->Renderer, "fonts/Hasklig-Regular.ttf", "Delete point", 60, TEXT_COLOR_White, 0, LABEL_VOID_PARAMS);
+        
+        menu_labels[1] = Label_New(app->Renderer, "fonts/Hasklig-Regular.ttf", "Add to start", 60, TEXT_COLOR_White, 0, LABEL_VOID_PARAMS);
         if ( NULL == point_text ) {
                 LogError("setup", "Label_New failed");
                 return 0;
         }
 
-        menu_labels[2] = Label_New(app->Renderer, "fonts/Hasklig-Regular.ttf", "Duplicate point", 60, TEXT_COLOR_White, 0, LABEL_VOID_PARAMS);
+        menu_labels[2] = Label_New(app->Renderer, "fonts/Hasklig-Regular.ttf", "Delete point", 60, TEXT_COLOR_White, 0, LABEL_VOID_PARAMS);
         if ( NULL == point_text ) {
                 LogError("setup", "Label_New failed");
                 return 0;
         }
+
 
 
         menu = Menu_New(app->Renderer, SDL_PIXELFORMAT_RGBA32,
@@ -157,9 +154,9 @@ int setup(APP *app) {
         }
 
         Menu_SetupButtons(menu, 6, 200, 30, MENU_BG, MENU_TRIGGER_COLOR, 4, 4, 5, 6);
+        menu_buttons[2] = Menu_SetButton(menu, 2, menu_labels[2], 0, 1, Menu_DelPoint); 
+        menu_buttons[1] = Menu_SetButton(menu, 1, menu_labels[1], 0, 1, Menu_AddPointToStart); 
         menu_buttons[0] = Menu_SetButton(menu, 0, menu_labels[0], 0, 1, Menu_AddPoint); 
-        menu_buttons[1] = Menu_SetButton(menu, 1, menu_labels[1], 0, 1, Menu_DelPoint); 
-        menu_buttons[2] = Menu_SetButton(menu, 2, menu_labels[2], 0, 1, Menu_DuplicatePoint); 
         
         SDL_SetRenderDrawBlendMode(app->Renderer, SDL_BLENDMODE_BLEND);
         SDL_SetTextureColorMod(point_texture, 0, 0, 0);
@@ -242,7 +239,7 @@ int Tick(APP *app) {
         bool rmb_clicked = rmb_pressed && prev_rmb_state == 0;
 
         
-        changes = CheckMousePos(&points, mouse_x, mouse_y, lmb_pressed, prev_lmb_state, shift_pressed) || changes;
+        changes = CheckMousePos(&points, mouse_x, mouse_y, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed) || changes;
         
         static Point *to_change = NULL;
         if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_x, mouse_y) ) ) {
@@ -252,17 +249,11 @@ int Tick(APP *app) {
                 to_change = (Point*)( (uint64_t)points.selected_point | (uint64_t)points.selected_line );
 
                 if ( to_change == NULL ) {
-                        menu_buttons[1]->active = 0;
                         menu_buttons[2]->active = 0;
-
-                        Label_Update(menu_labels[1], "Delete point", TEXT_COLOR_Grey);
-                        Label_Update(menu_labels[2], "Duplicate point", TEXT_COLOR_Grey);
+                        Label_Update(menu_labels[2], "Delete point", TEXT_COLOR_Grey);
                 } else {
-                        menu_buttons[1]->active = 1;
                         menu_buttons[2]->active = 1;
-
-                        Label_Update(menu_labels[1], "Delete point", TEXT_COLOR_White);
-                        Label_Update(menu_labels[2], "Duplicate point", TEXT_COLOR_White);
+                        Label_Update(menu_labels[2], "Delete point", TEXT_COLOR_White);
                 }
         }
 

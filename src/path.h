@@ -26,6 +26,7 @@ typedef struct Point {
         PState state;
         PState line_state;
         struct Point *next;
+        struct Point *prev;
 } Point;
 
 typedef struct PArray {
@@ -37,8 +38,9 @@ typedef struct PArray {
 
 
 void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label);
-bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed);
+bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed);
 void AddPoint(PArray *points, double x, double y, Point *line);
+void AddPoint_tostart(PArray *points, double x, double y);
 void DelPoint(PArray *points, Point *point);
 
 
