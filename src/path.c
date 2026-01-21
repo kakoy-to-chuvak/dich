@@ -5,6 +5,8 @@
 #define UNDER_MOUSE(cords, mouse_x, mouse_y) ( SQ(mouse_x-cords.x) + SQ(mouse_y-cords.y) <= SQ(POINT_DIAMETR>>1) ) 
 
 #define FIX_CORD(x, app_x) (x < 0 ? 0 : (x > app_x ? app_x : x))
+#define FIX_CORDS(cords, width, height) (SDL_FPoint){ FIX_CORD(cords.x, width),  FIX_CORD(cords.y, height) }
+
 #define FIX_LABEL_CORD(x, app_x, label_x) ( x + label_x + POINT_RADIUS > app_x - 5 ? x - label_x - POINT_RADIUS : x + POINT_RADIUS)
 
 
@@ -13,6 +15,7 @@ static float start_x = 0;
 static float start_y = 0;
 static float mouse_point_x = 0;
 static float mouse_point_y = 0;
+
 
 
 
@@ -106,13 +109,17 @@ void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *poin
 void MovePoint(Point *point, double x, double y, bool shift_pressed, bool ctrl_pressed) {
         x += mouse_point_x;
         y += mouse_point_y;
-        
-        x = FIX_CORD(x, APP_WIDTH);
-        y = FIX_CORD(y, APP_HEIGHT);
 
         SDL_FPoint mouse_cord = (SDL_FPoint){ x, y };
 
-        if ( shift_pressed ) {
+        if ( shift_pressed && ctrl_pressed && point->prev && point->next ) {
+                SDL_FPoint P1M = Vector_Sub(mouse_cord, point->prev->cords);
+                SDL_FPoint P1P2 = Vector_Sub(point->next->cords, point->prev->cords);
+
+                float k = 0.5 - Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
+                P1P2 = Vector_Mult_scl(P1P2, k);
+                mouse_cord = Vector_Sum(mouse_cord, P1P2);
+        } else if ( shift_pressed ) {
                 if ( fabs(x-start_x) > fabs(y-start_y) ) {
                         mouse_cord.y = start_y;
                 } else {
@@ -125,8 +132,11 @@ void MovePoint(Point *point, double x, double y, bool shift_pressed, bool ctrl_p
                 float k = Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
                 mouse_cord = Vector_Sum(point->prev->cords, Vector_Mult_scl(P1P2, k));
         }
+        
+        x = FIX_CORD(x, APP_WIDTH);
+        y = FIX_CORD(y, APP_HEIGHT);
 
-        point->cords = mouse_cord;
+        point->cords = FIX_CORDS(mouse_cord, APP_WIDTH, APP_HEIGHT);
 }
 
 

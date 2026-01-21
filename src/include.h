@@ -2,8 +2,6 @@
 #define INCLUDE_H
 
 
-#define MAX_POINTS 256
-
 #define SDL_INIT_FLAGS (SDL_INIT_VIDEO)
 #define APP_TITLE "Планировщик маршрута"
 #define APP_WIDTH 806 
@@ -30,7 +28,7 @@
 #define POINT_DIAMETR 31
 #define POINT_RADIUS (POINT_DIAMETR / 2)
 
-#define LINE_RADIUS 6
+#define LINE_RADIUS 5
 #define ARROW_BASE 24
 
 
