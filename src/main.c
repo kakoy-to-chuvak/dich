@@ -18,7 +18,6 @@
 #include "vectors.h"
 #include "path.h"
 #include "menu.h"
-#include "config_parser.h"
 
 
 
@@ -32,7 +31,6 @@ MENU_BUTTON *menu_buttons[3];
 SDL_Texture *background_texture = NULL;
 SDL_Texture *point_texture = NULL;
 
-PARSED_CONFIG config_object;
 
 bool lmb_pressed = 0;
 bool rmb_pressed = 0;
@@ -100,11 +98,6 @@ int render(APP *app) {
 
 
 int setup(APP *app) {
-        LogDebug("setup", "enter setup");
-        LogDebug("setup", "start parsing config");
-        config_object = Config_Parse("config.set");
-
-        Config_Print(config_object);
 
         LogDebug("setup", "IMG_Load: loading [images/point.png] to [tmp_surf]" );
         SDL_Surface *tmp_surf = IMG_Load("images/point.png");
@@ -347,8 +340,6 @@ int main() {
         Label_Free(menu_labels[0]);
         Label_Free(menu_labels[1]);
         Label_Free(menu_labels[2]);
-        
-        Config_Delete(config_object);
 
         SDL_DestroyTexture(point_texture);
         SDL_DestroyTexture(background_texture);
