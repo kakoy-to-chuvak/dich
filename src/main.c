@@ -31,6 +31,10 @@ MENU_BUTTON *menu_buttons[3];
 SDL_Texture *background_texture = NULL;
 SDL_Texture *point_texture = NULL;
 
+static int window_w = 0;
+static int window_h = 0;
+
+static SDL_FRect background_texture_rect;
 
 bool lmb_pressed = 0;
 bool rmb_pressed = 0;
@@ -46,15 +50,22 @@ PArray points = {
 
 struct menu_args {
         Point *point;
-        int x;
-        int y;
+        SDL_FPoint cords;
 };
 
 
 // menu buttons functions
 void *Menu_AddPoint(void *menu, void *args_vpointer) {
         struct menu_args args = *((struct menu_args*)args_vpointer);
-        AddPoint(&points, args.x, args.y, args.point);
+        SDL_FPoint cords = args.cords;
+        
+        cords.x -= background_texture_rect.x;
+        cords.y -= background_texture_rect.y;
+
+        cords.x *= BOX_WIDTH / background_texture_rect.w;
+        cords.y *= BOX_HEIGHT / background_texture_rect.h;
+
+        AddPoint(&points, cords, args.point);
 
         return menu;
 }
@@ -70,7 +81,16 @@ void *Menu_DelPoint(void *menu, void *args_vpointer) {
 
 void *Menu_AddPointToStart(void *menu, void *args_vpointer) {
         struct menu_args args = *((struct menu_args*)args_vpointer);
-        AddPoint_tostart(&points, args.x, args.y);
+
+        SDL_FPoint cords = args.cords;
+        
+        cords.x -= background_texture_rect.x;
+        cords.y -= background_texture_rect.y;
+
+        cords.x *= BOX_WIDTH / background_texture_rect.w;
+        cords.y *= BOX_HEIGHT / background_texture_rect.h;
+
+        AddPoint_tostart(&points, cords);
 
         return menu;
 }
@@ -84,11 +104,12 @@ int render(APP *app) {
         
         LogTrace("render", "render");
         
+        SDL_SetRenderDrawColor(app->Renderer, 0, 0, 0, 255);
         SDL_RenderClear(app->Renderer);
 
-        SDL_RenderTexture(app->Renderer, background_texture, NULL, NULL);
+        SDL_RenderTexture(app->Renderer, background_texture, NULL, &background_texture_rect);
 
-        RenderPath(app->Renderer, point_texture, &points, point_text);
+        RenderPath(app->Renderer, point_texture, &points, point_text, background_texture_rect);
 
         Menu_Render(menu);
         
@@ -196,8 +217,9 @@ int setup(APP *app) {
 
 int Tick(APP *app) {
         SDL_Event event;
-        static double mouse_x = 0;
-        static double mouse_y = 0;
+        static SDL_FPoint mouse_pos = {
+                0, 0
+        };
 
         while ( SDL_PollEvent(&event) ) {
                 switch (event.type) {
@@ -206,8 +228,8 @@ int Tick(APP *app) {
                                 return 0;
                                 break;
                         case SDL_EVENT_MOUSE_MOTION:
-                                mouse_x = event.motion.x;
-                                mouse_y = event.motion.y;
+                                mouse_pos.x = event.motion.x;
+                                mouse_pos.y = event.motion.y;
                                 break;
                         case SDL_EVENT_MOUSE_BUTTON_DOWN:
                                 if ( event.button.button == 1 ) {
@@ -251,10 +273,30 @@ int Tick(APP *app) {
                                                 break;
                                 }
                                 break;
+                        case SDL_EVENT_WINDOW_RESIZED:
+                                SDL_GetWindowSize(app->Window, &window_w, &window_h);
+                                float k = ((float)background_texture->w) / ((float)background_texture->h);
+                                
+                                // resize background texture
+                                if ( ((float)window_w) / ((float)window_h) > k ) {
+                                        background_texture_rect.w = window_h * k;
+                                        background_texture_rect.h = window_h;
+                                        background_texture_rect.y = 0;
+                                        background_texture_rect.x = ( window_w - background_texture_rect.w ) / 2;
+                                } else {
+                                        background_texture_rect.h = window_w / k;
+                                        background_texture_rect.w = window_w;
+                                        background_texture_rect.x = 0;
+                                        background_texture_rect.y = ( window_h - background_texture_rect.h ) / 2;
+                                }
+
+                                changes = 1;
+                                break;
                         default:
                                 break;
                 }
         }
+        
 
         static bool prev_lmb_state = 0;
         bool lmb_clicked = lmb_pressed && prev_lmb_state == 0;
@@ -264,17 +306,16 @@ int Tick(APP *app) {
 
         static struct menu_args args = {
                 NULL,
-                0, 0
+                {0, 0}
         };
 
         
-        changes |= CheckMousePos(&points, mouse_x, mouse_y, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed);
+        changes |= CheckMousePos(&points, mouse_pos, background_texture_rect, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed);
         
-        if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_x, mouse_y) ) ) {
-                args.x = mouse_x;
-                args.y = mouse_y;
+        if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_pos.x, mouse_pos.y) ) ) {
+                args.cords = mouse_pos;
 
-                Menu_Move(menu, mouse_x, mouse_y, APP_WIDTH, APP_HEIGHT);
+                Menu_Move(menu, mouse_pos.x, mouse_pos.y, window_w, window_h);
                 menu->active = 1;
                 changes = 1;
 
@@ -289,7 +330,7 @@ int Tick(APP *app) {
                 }
         }
 
-        changes |= Menu_CheckUpdate(menu, mouse_x, mouse_y, lmb_clicked | rmb_clicked, &args);
+        changes |= Menu_CheckUpdate(menu, mouse_pos.x, mouse_pos.y, lmb_clicked | rmb_clicked, &args);
 
         prev_lmb_state = lmb_pressed;
         prev_rmb_state = rmb_pressed;
@@ -314,23 +355,30 @@ int main() {
                 return 0;
         }   
 
-        app = AppNew("Планировщик маршрута", APP_WIDTH, APP_HEIGHT, 0, NULL);
+        app = AppNew("Планировщик маршрута", 0, 0, SDL_WINDOW_RESIZABLE, NULL);
         if ( NULL==app ) {
                 LogError("main", "AppNew failed");
                 goto app_quit;
         }
- 
+        
         if ( 0==setup(app) ) {
                 LogError("main", "setup failed");
                 goto app_quit;
         }
 
+        window_w = background_texture->w;
+        window_h = background_texture->h;
+        SDL_SetWindowSize(app->Window, window_w, window_h);
+
+        background_texture_rect.w = background_texture->w;
+        background_texture_rect.h = background_texture->h;
+        background_texture_rect.x = 0;
+        background_texture_rect.y = 0;
+
+
         AppSetTick(app, Tick);
         AppSetRendererTick(app, render);
-
         AppSetTps(app, TPS);
-        AppSetFps(app, FPS);
-
         AppMainloop(app);
 
         app_quit:

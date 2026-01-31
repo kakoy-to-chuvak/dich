@@ -4,11 +4,10 @@
 
 #define SDL_INIT_FLAGS (SDL_INIT_VIDEO)
 #define APP_TITLE "Планировщик маршрута"
-#define APP_WIDTH 806 
+#define APP_WIDTH 810 
 #define APP_HEIGHT 540
 
 #define TPS 60
-#define FPS 60
 
 #define TEXT_SIZE (35)
 
@@ -25,11 +24,15 @@
 #define MENU_TRIGGER_COLOR ((SDL_Color){0, 123, 208, 255})
 
 
-#define POINT_DIAMETR 31
-#define POINT_RADIUS (POINT_DIAMETR / 2)
+#define POINT_DIAMETR (POINT_RADIUS + POINT_RADIUS)
+#define POINT_RADIUS 0.058
 
-#define LINE_RADIUS 5
-#define ARROW_BASE 24
+#define LINE_RADIUS 0.0187
+#define ARROW_BASE 0.08
+
+#define BOX_HEIGHT 2.0f
+#define BOX_WIDTH  3.0f
+
 
 
 // 90°  (ALT248)

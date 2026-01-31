@@ -15,10 +15,10 @@
 
 
 typedef enum PState {
-        UNDEFINED = -1,
-        NONE_STATE = 0,
-        UNDER_MOUSE = 1,
-        SELECTED = 2,
+        PSTATE_UNDEFINED = -1,
+        PSTATE_NONE_STATE = 0,
+        PSTATE_UNDER_MOUSE = 1,
+        PSTATE_SELECTED = 2,
 } PState;
 
 typedef struct Point {
@@ -37,10 +37,10 @@ typedef struct PArray {
 
 
 
-void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label);
-bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed);
-void AddPoint(PArray *points, double x, double y, Point *line);
-void AddPoint_tostart(PArray *points, double x, double y);
+void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label, SDL_FRect texture_box);
+bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed);
+void AddPoint(PArray *points, SDL_FPoint cords, Point *line);
+void AddPoint_tostart(PArray *points, SDL_FPoint cords);
 void DelPoint(PArray *points, Point *point);
 
 

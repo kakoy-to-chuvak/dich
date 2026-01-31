@@ -28,8 +28,6 @@ typedef struct APPPROPS
 
         int preset_tps;
         int tps;
-        int preset_fps;
-        int fps;
 } APPPROPS;
 
 typedef struct APP 
@@ -57,9 +55,6 @@ int AppMainloop(APP *app);
 
 void AppSetTps(APP *app, int tps);
 int AppGetTps(APP *app);
-
-void AppSetFps(APP *app, int fps);
-int AppGetFps(APP *app);
 
 
 void AppQuit(APP *app);

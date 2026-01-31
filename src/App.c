@@ -83,9 +83,6 @@ int AppMainloop(APP *app) {
         LogDebug("AppMainloop", "set variables");;
         uint64_t last_tick = 0;
         uint64_t ns_per_tick = 1000000000 / app->Properties.preset_tps;
-        
-        uint64_t last_render_tick = 0;
-        uint64_t ns_per_render_tick = 1000000000 / app->Properties.preset_fps;
 
         LogDebug("AppMainloop", "set tick functions");
         int (*Tick)(APP*) = app->Tick;
@@ -99,15 +96,10 @@ int AppMainloop(APP *app) {
                         last_tick = SDL_GetTicksNS();
                         if ( Tick )
                                 app->exit_code = Tick(app);
-                        
-                }
-
-                if ( SDL_GetTicksNS() - last_render_tick > ns_per_render_tick ) {
-                        app->Properties.fps = (int)round((1000000000.f/(double)(SDL_GetTicksNS()-last_render_tick)));
-                        last_render_tick = SDL_GetTicksNS();
                         if ( RenderTick )
                                 RenderTick(app);
                 }
+
                 CRP_sleep(1);
         }
 
@@ -133,15 +125,6 @@ void AppSetTps(APP *app, int tps) {
 
 int AppGetTps(APP *app) {         
         return app->Properties.tps; 
-}
-
-void AppSetFps(APP *app, int fps) {
-        app->Properties.preset_fps = fps;
-}
-
-
-int AppGetFps(APP *app) {         
-        return app->Properties.fps; 
 }
 
 

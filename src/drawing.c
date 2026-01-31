@@ -1,18 +1,15 @@
 #include "drawing.h"
 
 
-#define FIX_CORD(x, app_x) ( x < 0 ? 0 : ( x > app_x ? app_x : x) )
-
-
 void RenderLine(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, int32_t radius) {
         int32_t x = radius;
         int32_t y = 0; 
         int32_t err = 0;
 
-        int32_t x0 = FIX_CORD(P0.x, APP_WIDTH);
-        int32_t y0 = FIX_CORD(P0.y, APP_HEIGHT);
-        int32_t x1 = FIX_CORD(P1.x, APP_WIDTH);
-        int32_t y1 = FIX_CORD(P1.y, APP_HEIGHT);
+        int32_t x0 = P0.x;
+        int32_t y0 = P0.y;
+        int32_t x1 = P1.x;
+        int32_t y1 = P1.y;
 
         while ( x >= y ) {
                 SDL_RenderLine(renderer, x0 + x, y0 + y, x1 + x, y1 + y);

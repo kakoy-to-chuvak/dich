@@ -1,13 +1,10 @@
 #include "path.h"
 
 
-#define SQ(x) ((x)*(x))
-#define UNDER_MOUSE(cords, mouse_x, mouse_y) ( SQ(mouse_x-cords.x) + SQ(mouse_y-cords.y) <= SQ(POINT_DIAMETR>>1) ) 
+bool _PointUnderMouse(SDL_FPoint cords, SDL_FPoint mouse_cords, float r) {
+        return Vector_SqAbs(Vector_Sub(cords, mouse_cords)) < r * r;
+}
 
-#define FIX_CORD(x, app_x) (x < 0 ? 0 : (x > app_x ? app_x : x))
-#define FIX_CORDS(cords, width, height) (SDL_FPoint){ FIX_CORD(cords.x, width),  FIX_CORD(cords.y, height) }
-
-#define FIX_LABEL_CORD(x, app_x, label_x) ( x + label_x + POINT_RADIUS > app_x - 5 ? x - label_x - POINT_RADIUS : x + POINT_RADIUS)
 
 
 
@@ -16,77 +13,108 @@ static float start_y = 0;
 static float mouse_point_x = 0;
 static float mouse_point_y = 0;
 
+SDL_FPoint CordsToBox(SDL_FPoint cords, SDL_FRect texture_box) {
+        cords.x -= texture_box.x;
+        cords.y -= texture_box.y;
+
+        cords.x *= BOX_WIDTH / texture_box.w;
+        cords.y *= BOX_HEIGHT / texture_box.h;
+
+        return cords;
+}
+
+SDL_FPoint CordsToWindow(SDL_FPoint cords, SDL_FRect texture_box) {
+        cords.x *= texture_box.w /BOX_WIDTH;
+        cords.y *= texture_box.h / BOX_HEIGHT;
+        
+        cords.x += texture_box.x;
+        cords.y += texture_box.y;
+
+        return cords;
+}
 
 
 
-void _RenderPointCords(Point *point, LABEL *label) {
-        if ( point->state == NONE_STATE ) 
+
+void _RenderPointCords(Point *point, LABEL *label, SDL_FRect texture_box) {
+        if ( point->state == PSTATE_NONE_STATE ) 
                 return;
 
         char point_text[32];
-        snprintf(point_text, sizeof(point_text), "(%.0f, %.0f)", point->cords.x, point->cords.y);
+        snprintf(point_text, sizeof(point_text), "(%.3f, %.3f)", point->cords.x, point->cords.y);
         Label_Update(label, point_text, TEXT_COLOR_Black);
 
+        SDL_FPoint real_cords = CordsToWindow(point->cords, texture_box);
+
         SDL_FRect label_rect = {
-                FIX_LABEL_CORD(point->cords.x, APP_WIDTH, label->rect.w / 2 ), 
-                FIX_LABEL_CORD(point->cords.y, APP_HEIGHT, label->rect.h / 2 ),
-                label->rect.w / 2, label->rect.h / 2 
+                real_cords.x + 30,
+                real_cords.y + 30,
+                label->rect.w,
+                label->rect.h,
         };
 
         Label_Draw(label, NULL, &label_rect);
 }
 
 
-void _RenderPoint(SDL_Renderer *renderer, Point *point, SDL_Texture *point_texture) {
+void _RenderPoint(SDL_Renderer *renderer, Point *point, SDL_Texture *point_texture, SDL_FRect texture_box, float fixed_r) {
+        SDL_FPoint real_cords = CordsToWindow(point->cords, texture_box);
         SDL_FRect pos = {       
-                        point->cords.x-POINT_RADIUS, 
-                        point->cords.y-POINT_RADIUS, 
-                        POINT_DIAMETR, 
-                        POINT_DIAMETR
-                        };
+                real_cords.x - fixed_r, 
+                real_cords.y - fixed_r, 
+                fixed_r * 2, 
+                fixed_r * 2
+        };
 
         SDL_RenderTexture(renderer, point_texture, NULL, &pos);
 }
 
 
-void _RenderLine(SDL_Renderer *renderer, Point *point, float line_r, float arrrow_base, SDL_FColor arrow_Fcolor) {
-        if ( point->line_state == UNDER_MOUSE ) {
+void _RenderLine(SDL_Renderer *renderer, Point *point, float line_r, float arrrow_base, SDL_FColor arrow_Fcolor, SDL_FRect texture_box) {
+        if ( point->line_state == PSTATE_UNDER_MOUSE ) {
                 SDL_SetRenderDrawColor(renderer, 90, 255, 90, 255);
-        } else if ( point->line_state == SELECTED ) {
+        } else if ( point->line_state == PSTATE_SELECTED ) {
                 SDL_SetRenderDrawColor(renderer, 255, 90, 90, 255);
         }
+
+        SDL_FPoint window_cords = CordsToWindow(point->cords, texture_box);
+        SDL_FPoint window_next_cords = CordsToWindow(point->next->cords, texture_box);
         
-        RenderLine(renderer, point->cords, point->next->cords, line_r);
-        RenderArrow(renderer, point->cords, point->next->cords, arrrow_base, arrow_Fcolor);
+        RenderLine(renderer, window_cords, window_next_cords, line_r);
+        RenderArrow(renderer, window_cords, window_next_cords, arrrow_base, arrow_Fcolor);
 
         SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255); 
 }
 
 
-void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label) {
+void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label, SDL_FRect texture_box) {
         SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255);
 
         SDL_Color arrow_color = { 50, 50, 255, 255 };
         SDL_FColor arrow_Fcolor = (SDL_FColor) { arrow_color.r / 255.f, arrow_color.g / 255.f, arrow_color.b / 255.f, arrow_color.a / 255.f };
 
+        float fixed_r = POINT_RADIUS / BOX_HEIGHT * texture_box.h;
+        float fixed_line_r = ((float)LINE_RADIUS) / BOX_HEIGHT * texture_box.h;
+        float fixed_arrow_b = ((float)ARROW_BASE) / BOX_HEIGHT * texture_box.h;
+
         Point *now_point = points->points;
         while ( now_point ) {
                 if ( now_point->next ) {
-                      _RenderLine(renderer, now_point, LINE_RADIUS, ARROW_BASE, arrow_Fcolor);  
+                      _RenderLine(renderer, now_point, fixed_line_r, fixed_arrow_b, arrow_Fcolor, texture_box);  
                 }
                 
-                if ( now_point->state == NONE_STATE )
-                        _RenderPoint(renderer, now_point, point_texture);
+                if ( now_point->state == PSTATE_NONE_STATE )
+                        _RenderPoint(renderer, now_point, point_texture, texture_box, fixed_r);
 
                 now_point = now_point->next;
         }
 
         if ( points->selected_point ) {
                 switch ( points->selected_point->state ) {
-                        case UNDER_MOUSE:
+                        case PSTATE_UNDER_MOUSE:
                                 SDL_SetTextureColorMod(point_texture, 40, 255, 40);
                                 break;
-                        case SELECTED:
+                        case PSTATE_SELECTED:
                                 SDL_SetTextureColorMod(point_texture, 255, 40, 40);
                                 break;
                         default:
@@ -94,8 +122,8 @@ void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *poin
                                 break;
                 }
 
-                _RenderPoint(renderer, points->selected_point, point_texture);
-                _RenderPointCords(points->selected_point, point_label);
+                _RenderPoint(renderer, points->selected_point, point_texture, texture_box, fixed_r);
+                _RenderPointCords(points->selected_point, point_label, texture_box);
 
                 SDL_SetTextureColorMod(point_texture, 0, 0, 0);
         }
@@ -106,37 +134,44 @@ void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *poin
 
 
 
-void MovePoint(Point *point, double x, double y, bool shift_pressed, bool ctrl_pressed) {
-        x += mouse_point_x;
-        y += mouse_point_y;
-
-        SDL_FPoint mouse_cord = (SDL_FPoint){ x, y };
+void MovePoint(Point *point, SDL_FPoint pos, bool shift_pressed, bool ctrl_pressed) {
+        pos.x += mouse_point_x;
+        pos.y += mouse_point_y;
 
         if ( shift_pressed && ctrl_pressed && point->prev && point->next ) {
-                SDL_FPoint P1M = Vector_Sub(mouse_cord, point->prev->cords);
+                SDL_FPoint P1M = Vector_Sub(pos, point->prev->cords);
                 SDL_FPoint P1P2 = Vector_Sub(point->next->cords, point->prev->cords);
 
                 float k = 0.5 - Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
                 P1P2 = Vector_Mult_scl(P1P2, k);
-                mouse_cord = Vector_Sum(mouse_cord, P1P2);
+                pos = Vector_Sum(pos, P1P2);
         } else if ( shift_pressed ) {
-                if ( fabs(x-start_x) > fabs(y-start_y) ) {
-                        mouse_cord.y = start_y;
+                if ( fabs(pos.x-start_x) > fabs(pos.y-start_y) ) {
+                        pos.y = start_y;
                 } else {
-                        mouse_cord.x = start_x;
+                        pos.x = start_x;
                 }
         } else if ( ctrl_pressed && point->prev && point->next ) {
-                SDL_FPoint P1M = Vector_Sub(mouse_cord, point->prev->cords);
+                SDL_FPoint P1M = Vector_Sub(pos, point->prev->cords);
                 SDL_FPoint P1P2 = Vector_Sub(point->next->cords, point->prev->cords);
 
                 float k = Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
-                mouse_cord = Vector_Sum(point->prev->cords, Vector_Mult_scl(P1P2, k));
+                pos = Vector_Sum(point->prev->cords, Vector_Mult_scl(P1P2, k));
         }
-        
-        x = FIX_CORD(x, APP_WIDTH);
-        y = FIX_CORD(y, APP_HEIGHT);
 
-        point->cords = FIX_CORDS(mouse_cord, APP_WIDTH, APP_HEIGHT);
+        if ( pos.x < 0 ) {
+                pos.x = POINT_RADIUS;
+        } else if ( pos.x > BOX_WIDTH ) {
+                pos.x = BOX_WIDTH - POINT_RADIUS;
+        }
+
+        if ( pos.y < 0 ) {
+                pos.y = POINT_RADIUS;
+        } else if ( pos.y > BOX_HEIGHT ) {
+                pos.y = BOX_HEIGHT - POINT_RADIUS;
+        }
+
+        point->cords = pos;
 }
 
 
@@ -160,16 +195,16 @@ bool TouchLine(SDL_FPoint P1, SDL_FPoint P2, SDL_FPoint M, float line_r, float p
 }
 
 
-bool CheckLine(PArray *points, Point *point, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state) {
-        PState new = NONE_STATE;
+bool CheckLine(PArray *points, Point *point, SDL_FPoint mouse_pos, bool mouse_pressed, bool prev_mouse_state) {
+        PState new = PSTATE_NONE_STATE;
 
         if (    
-                TouchLine(point->cords, point->next->cords, (SDL_FPoint){mouse_x, mouse_y}, LINE_RADIUS, POINT_RADIUS)
+                TouchLine(point->cords, point->next->cords, mouse_pos, LINE_RADIUS, POINT_RADIUS)
         ) {
                 if ( mouse_pressed && prev_mouse_state == 0 ) {
-                        new = SELECTED;
+                        new = PSTATE_SELECTED;
                 } else {
-                        new = UNDER_MOUSE;
+                        new = PSTATE_UNDER_MOUSE;
                 }
                 points->selected_line = point;
         }
@@ -184,19 +219,19 @@ bool CheckLine(PArray *points, Point *point, double mouse_x, double mouse_y, boo
 }
 
 
-bool CheckPoint(PArray *points, Point *point, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state) {
-        PState new = NONE_STATE;
+bool CheckPoint(PArray *points, Point *point, SDL_FPoint mouse_pos, bool mouse_pressed, bool prev_mouse_state) {
+        PState new = PSTATE_NONE_STATE;
 
-        if ( UNDER_MOUSE(point->cords, mouse_x, mouse_y) ) {
+        if ( _PointUnderMouse(point->cords, mouse_pos, POINT_RADIUS) ) {
                 if ( mouse_pressed && prev_mouse_state == 0 ) {
-                        new = SELECTED;
+                        new = PSTATE_SELECTED;
                         start_x = point->cords.x;
                         start_y = point->cords.y;
 
-                        mouse_point_x = start_x - mouse_x;
-                        mouse_point_y = start_y - mouse_y;
+                        mouse_point_x = start_x - mouse_pos.x;
+                        mouse_point_y = start_y - mouse_pos.y;
                 } else {
-                        new = UNDER_MOUSE;
+                        new = PSTATE_UNDER_MOUSE;
                 }
                 points->selected_point = point;
         }
@@ -211,23 +246,25 @@ bool CheckPoint(PArray *points, Point *point, double mouse_x, double mouse_y, bo
 }
 
 
-bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed) {
+bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed) {
         bool points_changed = 0;
+
+        mouse_pos = CordsToBox(mouse_pos, texture_box);
 
         if ( points->selected_point ) {
                 points->selected_line = NULL;
-                if ( points->selected_point->state == SELECTED && mouse_pressed ) {
-                        MovePoint(points->selected_point, mouse_x, mouse_y, shift_pressed, ctrl_pressed);
+                if ( points->selected_point->state == PSTATE_SELECTED && mouse_pressed ) {
+                        MovePoint(points->selected_point, mouse_pos, shift_pressed, ctrl_pressed);
                 } else {
-                        points->selected_point->state = NONE_STATE;
+                        points->selected_point->state = PSTATE_NONE_STATE;
                         points->selected_point = NULL;
                 } 
                 points_changed = 1;
         }
 
         if ( points->selected_line ) {
-                if ( mouse_pressed == 0 || points->selected_line->line_state != SELECTED ) {
-                        points->selected_line->line_state = NONE_STATE;
+                if ( mouse_pressed == 0 || points->selected_line->line_state != PSTATE_SELECTED ) {
+                        points->selected_line->line_state = PSTATE_NONE_STATE;
                         points->selected_line = NULL;
                         points_changed = 1;
                 }
@@ -239,35 +276,35 @@ bool CheckMousePos(PArray *points, double mouse_x, double mouse_y, bool mouse_pr
                         break;
                 }
 
-                points_changed |= CheckPoint(points, now_point, mouse_x, mouse_y, mouse_pressed, prev_mouse_state);
+                points_changed |= CheckPoint(points, now_point, mouse_pos, mouse_pressed, prev_mouse_state);
 
                 if ( points->selected_point == NULL && now_point->next ) {
-                        points_changed |= CheckLine(points, now_point, mouse_x, mouse_y, mouse_pressed, prev_mouse_state);
+                        points_changed |= CheckLine(points, now_point, mouse_pos, mouse_pressed, prev_mouse_state);
                 }
                 now_point = now_point->next;
         }
         
-        SDL_SetCursor(SDL_CreateSystemCursor(points->selected_point ? points->selected_point->state == UNDER_MOUSE ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_MOVE : SDL_SYSTEM_CURSOR_DEFAULT ));
+        SDL_SetCursor(SDL_CreateSystemCursor(points->selected_point ? points->selected_point->state == PSTATE_UNDER_MOUSE ? SDL_SYSTEM_CURSOR_POINTER : SDL_SYSTEM_CURSOR_MOVE : SDL_SYSTEM_CURSOR_DEFAULT ));
 
         return points_changed;
 } 
 
 
-void AddPoint(PArray *points, double x, double y, Point *line) {
+void AddPoint(PArray *points, SDL_FPoint cords, Point *line) {
         Point *new = malloc(sizeof(Point));
         if ( new == NULL ) {
                 LogError("AddPoint", "couldn`n allocate memory");
         }
 
         *new = (Point){
-                { x, y }, 
-                NONE_STATE, NONE_STATE,
+                cords, 
+                PSTATE_NONE_STATE, PSTATE_NONE_STATE,
                 NULL,
                 NULL
         };
 
         if ( line && line->next ) {
-                SDL_FPoint ac = Vector_Sub( (SDL_FPoint){x, y}, line->cords );
+                SDL_FPoint ac = Vector_Sub( cords, line->cords );
                 SDL_FPoint ab = Vector_Sub( line->next->cords, line->cords );
 
                 double k = Vector_DotProd(ac, ab);
@@ -300,22 +337,36 @@ void AddPoint(PArray *points, double x, double y, Point *line) {
         new->prev = now;
 }
 
-void AddPoint_tostart(PArray *points, double x, double y) {
+void AddPoint_tostart(PArray *points, SDL_FPoint cords) {
         Point *new = malloc(sizeof(Point));
         if ( new == NULL ) {
                 LogError("AddPoint", "couldn`n allocate memory");
         }
 
+        if ( cords.x < 0 ) {
+                cords.x = POINT_RADIUS;
+        } else if ( cords.x > BOX_WIDTH ) {
+                cords.x = BOX_WIDTH - POINT_RADIUS;
+        }
+
+        if ( cords.y < 0 ) {
+                cords.y = POINT_RADIUS;
+        } else if ( cords.y > BOX_HEIGHT ) {
+                cords.y = BOX_HEIGHT - POINT_RADIUS;
+        }
+
         *new = (Point){
-                { x, y }, 
-                NONE_STATE, NONE_STATE,
+                cords, 
+                PSTATE_NONE_STATE, PSTATE_NONE_STATE,
                 NULL,
                 NULL
         }; 
 
         new->next = points->points;
         points->points = new;
-        new->next->prev = new;
+        if ( new->next ) {
+                new->next->prev = new;
+        }
 }
 
 void DelPoint(PArray *points, Point *point) {
