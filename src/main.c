@@ -41,6 +41,7 @@ bool lmb_pressed = 0;
 bool rmb_pressed = 0;
 bool shift_pressed = 0;
 bool ctrl_pressed = 0;
+bool alt_pressed = 0;
 
 char save_file[MAX_PATH] = { 0 };
 
@@ -49,6 +50,8 @@ PArray points = {
         NULL,
         NULL,
         NULL,
+        "",
+        FILE_FORMAT_UNDEFINED,
 };
 
 struct menu_args {
@@ -260,12 +263,17 @@ int Tick(APP *app) {
                                         case SDL_SCANCODE_LCTRL:
                                                 ctrl_pressed = 1;
                                                 break;
+                                        case SDL_SCANCODE_LALT:
+                                                alt_pressed = 1;
+                                                break;
                                         case SDL_SCANCODE_S:
-                                                if ( ctrl_pressed == 0 ) {
+                                                if ( ctrl_pressed == 0 )
                                                         break;
-                                                }
 
-                                                OpenFIleDialog(NULL, NULL, &points);
+                                                if ( shift_pressed == 1 || *points.save_file == 0 )
+                                                        ShowSaveFIleDialog(NULL, NULL, &points);
+                                                else
+                                                        SavePoints(&points);
                                                 
                                                 break;
                                         default:
@@ -279,6 +287,9 @@ int Tick(APP *app) {
                                                 break;
                                         case SDL_SCANCODE_LCTRL:
                                                 ctrl_pressed = 0;
+                                                break;
+                                        case SDL_SCANCODE_LALT:
+                                                alt_pressed = 0;
                                                 break;
                                         default:
                                                 break;
@@ -321,7 +332,7 @@ int Tick(APP *app) {
         };
 
         
-        changes |= CheckMousePos(&points, mouse_pos, background_texture_rect, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed);
+        changes |= CheckMousePos(&points, mouse_pos, background_texture_rect, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed, alt_pressed);
         
         if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_pos.x, mouse_pos.y) ) ) {
                 args.cords = mouse_pos;
@@ -393,6 +404,8 @@ int main() {
         AppMainloop(app);
 
         app_quit:
+        FreePoints(&points);
+        
         Label_Free(point_text);
 
         Menu_Free(menu);

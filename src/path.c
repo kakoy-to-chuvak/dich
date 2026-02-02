@@ -130,42 +130,59 @@ void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *poin
 
 
 
-void MovePoint(Point *point, SDL_FPoint pos, bool shift_pressed, bool ctrl_pressed, float fixed_radius) {
+void MovePoint(Point *point, SDL_FPoint pos, bool shift_pressed, bool ctrl_pressed, bool alt_pressed) {
         pos.x += mouse_point_x;
         pos.y += mouse_point_y;
 
-        if ( shift_pressed && ctrl_pressed && point->prev && point->next ) {
+        if ( ctrl_pressed && point->prev && point->next ) {
                 SDL_FPoint P1M = Vector_Sub(pos, point->prev->cords);
                 SDL_FPoint P1P2 = Vector_Sub(point->next->cords, point->prev->cords);
 
-                float k = 0.5 - Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
-                P1P2 = Vector_Mult_scl(P1P2, k);
-                pos = Vector_Sum(pos, P1P2);
+                float k1 = Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
+                float k2 = 0.5 - k1;
+
+                SDL_FPoint P1 = Vector_Mult_scl(P1P2, k1);
+                SDL_FPoint P2 = Vector_Mult_scl(P1P2, k2);
+
+                P1 = Vector_Sum(point->prev->cords, P1);
+
+                if ( Vector_SqAbs( Vector_Sub(pos, P1) ) < Vector_SqAbs(P2) )
+                        pos = P1;
+                else
+                        pos = Vector_Sum(pos, P2);
+        } else if ( alt_pressed && shift_pressed && point->next ) {
+                SDL_FPoint next_cords = point->next->cords;
+                SDL_FPoint Vd = Vector_Sub(pos, next_cords);
+                if ( fabs(Vd.x) < fabs(Vd.y) )
+                        pos.x = next_cords.x;
+                else
+                        pos.y = next_cords.y;
+        } else if ( alt_pressed && point->prev ) {
+                SDL_FPoint prev_cords = point->prev->cords;
+                SDL_FPoint Vd = Vector_Sub(pos, prev_cords);
+                if ( fabs(Vd.x) < fabs(Vd.y) )
+                        pos.x = prev_cords.x;
+                else
+                        pos.y = prev_cords.y;
         } else if ( shift_pressed ) {
                 if ( fabs(pos.x-start_x) > fabs(pos.y-start_y) ) {
                         pos.y = start_y;
                 } else {
                         pos.x = start_x;
                 }
-        } else if ( ctrl_pressed && point->prev && point->next ) {
-                SDL_FPoint P1M = Vector_Sub(pos, point->prev->cords);
-                SDL_FPoint P1P2 = Vector_Sub(point->next->cords, point->prev->cords);
-
-                float k = Vector_DotProd(P1M, P1P2) / Vector_SqAbs(P1P2);
-                pos = Vector_Sum(point->prev->cords, Vector_Mult_scl(P1P2, k));
         }
 
-        if ( pos.x < fixed_radius ) {
-                pos.x = fixed_radius;
-        } else if ( pos.x > BOX_WIDTH ) {
-                pos.x = BOX_WIDTH - fixed_radius;
-        }
+        if ( pos.x < 0 )
+                pos.x = 0;
+        else if ( pos.x > BOX_WIDTH )
+                pos.x = BOX_WIDTH;
 
-        if ( pos.y < fixed_radius ) {
-                pos.y = fixed_radius;
-        } else if ( pos.y > BOX_HEIGHT ) {
-                pos.y = BOX_HEIGHT - fixed_radius;
-        }
+
+        if ( pos.y < 0 )
+                pos.y = 0;
+        else if ( pos.y > BOX_HEIGHT )
+                pos.y = BOX_HEIGHT;
+
 
         point->cords = pos;
 }
@@ -242,7 +259,7 @@ bool CheckPoint(PArray *points, Point *point, SDL_FPoint mouse_pos, bool mouse_p
 }
 
 
-bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed) {
+bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed, bool alt_pressed) {
         bool points_changed = 0;
 
         float fixed_radius = POINT_RADIUS * BOX_HEIGHT / texture_box.h;
@@ -253,7 +270,7 @@ bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, 
         if ( points->selected_point ) {
                 points->selected_line = NULL;
                 if ( points->selected_point->state == PSTATE_SELECTED && mouse_pressed ) {
-                        MovePoint(points->selected_point, mouse_pos, shift_pressed, ctrl_pressed, fixed_radius);
+                        MovePoint(points->selected_point, mouse_pos, shift_pressed, ctrl_pressed, alt_pressed);
                 } else {
                         points->selected_point->state = PSTATE_NONE_STATE;
                         points->selected_point = NULL;
@@ -370,4 +387,16 @@ void DelPoint(PArray *points, Point *point) {
         }
 
         free(point);
+}
+
+
+
+void FreePoints(PArray *_Points) {
+        Point *now = _Points->points;
+
+        while ( now ) {
+                Point *next = now->next;
+                free(now);
+                now = next;
+        }
 }

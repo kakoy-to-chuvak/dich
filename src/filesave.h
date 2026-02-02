@@ -8,16 +8,12 @@
 #include "logs.h"
 
 
-typedef enum FILESAVE_FORMAT {
-        SAVE_FORMAT_JSON = 0,
-        SAVE_FORMAT_TXT = 1,
-        SAVE_FORMAT_CSV = 2,
-        SAVE_FORMAT_UNDEFINED = 3,
-} FILESAVE_FORMAT;
 
+void SavePoints(PArray* _Points);
+void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points);
 
-void SavePoints(PArray* _Points, const char *_Filename, FILESAVE_FORMAT _Save_format);
-void OpenFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points);
+void LoadPoints(PArray* _Points);
+void ShowOpenFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points);
 
 
 

@@ -2,71 +2,50 @@
 
 
 static const SDL_DialogFileFilter dialog_filters[4] = {
-    { "JSON files",   "json" },
-    { "TXT files",   "txt" },
-    { "CSV files",   "csv" },
-    { "All files",   "*" }
+    { "JSON (*.json)",   "json" },
+    { "TXT (*.txt)",     "txt" },
+    { "CSV (*.csv)",     "csv" },
+    { "All files (*.*)", "*" }
 };
 
 
-void SavePoints(PArray* _Points, const char *_Filename, FILESAVE_FORMAT _Save_format) {
+void SavePoints(PArray* _Points) {
         if ( _Points == NULL ) {
                 LogNotice("SavePoints", "No points to save");
                 return;
         }
 
-        FILE *file = fopen(_Filename, "w");
+        FILE *file = fopen(_Points->save_file, "w");
         if ( file == NULL ) {
-                LogNotice("SavePoints", "Error on opening file: %s", _Filename);
+                LogNotice("SavePoints", "Error on opening file: %s", _Points->save_file);
                 return;
         }
 
-        Point *now = _Points->points;
+        char *print_format = "%.3f %.3f\n";
 
-        if ( _Save_format == SAVE_FORMAT_UNDEFINED ) {
-                // define save format by extension
-                char *extension = strrchr(_Filename, '.');
-                if ( extension == NULL ) {
-                        _Save_format = SAVE_FORMAT_TXT;
-                        goto save_points;
-                }
-
-                extension++;
-                
-                if ( strcmp(extension, "csv") == 0 ) {
-                        _Save_format = SAVE_FORMAT_CSV;
-                        goto save_points;
-                } else if ( strcmp(extension, "json") == 0 ) {
-                        _Save_format = SAVE_FORMAT_JSON;
-                        goto save_points;
-                } else {
-                        _Save_format = SAVE_FORMAT_TXT;
-                        goto save_points;
-                }
-        }
-
-        save_points:
-        char *print_format = "%f %f\n";
-
-        switch (_Save_format) {
-                case SAVE_FORMAT_JSON:
-                        print_format = "[%f,%f],";
+        switch (_Points->format) {
+                case FILE_FORMAT_JSON:
+                        print_format = "[%.3f,%.3f],";
                         fputc('[', file);
+                        if ( _Points->points == NULL ) {
+                                fputc(' ', file);
+                        }
                         break;
-                case SAVE_FORMAT_CSV:
-                        print_format = "%f,%f\n";
+                case FILE_FORMAT_CSV:
+                        print_format = "%.3f,%.3f\n";
                         fputs("x,y\n", file);
                         break;
                 default:
                         break;
         }
 
+        Point *now = _Points->points;
         while ( now ) {
                 fprintf(file, print_format, now->cords.x, now->cords.y);
                 now = now->next;
         }
 
-        if ( _Save_format == SAVE_FORMAT_JSON ) {
+        if ( _Points->format == FILE_FORMAT_JSON ) {
                 fseek(file, -1, SEEK_CUR);
                 fputc(']', file);
         }
@@ -75,32 +54,104 @@ void SavePoints(PArray* _Points, const char *_Filename, FILESAVE_FORMAT _Save_fo
 }
 
 
-static void SDLCALL FileDialogCallback(void* userdata, const char* const* filelist, int filter) {
+static void SDLCALL __SaveFileDialogCallback(void* userdata, const char* const* filelist, int filter) {
         if ( filelist == NULL ) {
-                LogNotice("OpenFIleDialog (FileDialogCallback)", "An error occured: %s", SDL_GetError());
+                LogNotice("ShowSaveFIleDialog (__SaveFileDialogCallback)", "An error occured: %s", SDL_GetError());
                 return;
         }
 
         if ( *filelist == NULL ) {
-                LogNotice("OpenFIleDialog (FileDialogCallback)", "No files selected");
+                LogNotice("ShowSaveFIleDialog (__SaveFileDialogCallback)", "No files selected");
                 return;
         }
 
-        FILESAVE_FORMAT format = SAVE_FORMAT_UNDEFINED;
-        if ( filter > 0 && filter <= 4 ) {
+        FILESAVE_FORMAT format = FILE_FORMAT_UNDEFINED;
+        if ( filter >= 0 && filter < 3 ) {
                 format = (FILESAVE_FORMAT)filter;
+        } else {
+                // define save format by extension
+                char *extension = strrchr(*filelist, '.');
+                if ( extension == NULL ) {
+                        format = FILE_FORMAT_TXT;
+                        goto save_points;
+                }
+
+                extension++;
+                
+                if ( strcmp(extension, "csv") == 0 ) {
+                        format = FILE_FORMAT_CSV;
+                } else if ( strcmp(extension, "json") == 0 ) {
+                        format = FILE_FORMAT_JSON;
+                } else {
+                        format = FILE_FORMAT_TXT;
+                }
         }
 
-        while (*filelist) {
-                SavePoints(userdata, *filelist, format);
-                filelist++;
-        }
+        save_points:
+
+        ((PArray*)userdata)->format = format;
+        strcpy_s(((PArray*)userdata)->save_file, MAX_PATH, *filelist);
+
+        SavePoints(userdata);
 }
 
 
 
 
 
-void OpenFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points) {
-        SDL_ShowOpenFileDialog(FileDialogCallback, _Points, _Window, dialog_filters, 4, _Default_location, 1);
+void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points) {
+        SDL_ShowSaveFileDialog(__SaveFileDialogCallback, _Points, _Window, dialog_filters, 4, _Default_location);
+}
+
+
+
+void LoadPoints(PArray* _Points) {
+
+}
+
+
+static void SDLCALL __OpenFileDialogCallback(void* userdata, const char* const* filelist, int filter) {
+        if ( filelist == NULL ) {
+                LogNotice("ShowOpenFIleDialog (__OpenFileDialogCallback)", "An error occured: %s", SDL_GetError());
+                return;
+        }
+
+        if ( *filelist == NULL ) {
+                LogNotice("ShowOpenFIleDialog (__OpenFileDialogCallback)", "No files selected");
+                return;
+        }
+
+        FILESAVE_FORMAT format = FILE_FORMAT_UNDEFINED;
+        if ( filter >= 0 && filter < 3 ) {
+                format = (FILESAVE_FORMAT)filter;
+        } else {
+                // define save format by extension
+                char *extension = strrchr(*filelist, '.');
+                if ( extension == NULL ) {
+                        format = FILE_FORMAT_TXT;
+                        goto save_points;
+                }
+
+                extension++;
+                
+                if ( strcmp(extension, "csv") == 0 ) {
+                        format = FILE_FORMAT_CSV;
+                } else if ( strcmp(extension, "json") == 0 ) {
+                        format = FILE_FORMAT_JSON;
+                } else {
+                        format = FILE_FORMAT_TXT;
+                }
+        }
+
+        save_points:
+
+        ((PArray*)userdata)->format = format;
+        strcpy_s(((PArray*)userdata)->save_file, MAX_PATH, *filelist);
+
+        LoadPoints(userdata);
+}
+
+
+void ShowOpenFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points) {
+        SDL_ShowOpenFileDialog(__OpenFileDialogCallback, _Points, _Window, dialog_filters, 4, _Default_location, 0);
 }

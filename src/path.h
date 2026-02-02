@@ -29,19 +29,30 @@ typedef struct Point {
         struct Point *prev;
 } Point;
 
+typedef enum FILESAVE_FORMAT {
+        FILE_FORMAT_JSON = 0,
+        FILE_FORMAT_TXT = 1,
+        FILE_FORMAT_CSV = 2,
+        FILE_FORMAT_UNDEFINED = 3,
+} FILESAVE_FORMAT;
+
 typedef struct PArray {
         Point *points;
         Point *selected_point;
         Point *selected_line;
+        char save_file[MAX_PATH];
+        FILESAVE_FORMAT format;
 } PArray;
 
 
 
 void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label, SDL_FRect texture_box);
-bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed);
+bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed, bool alt_pressed);
 void AddPoint(PArray *points, SDL_FPoint cords, Point *line);
 void AddPoint_tostart(PArray *points, SDL_FPoint cords);
 void DelPoint(PArray *points, Point *point);
+
+void FreePoints(PArray *_Points);
 
 
 
