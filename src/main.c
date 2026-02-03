@@ -70,7 +70,7 @@ void *Menu_AddPoint(void *menu, void *args_vpointer) {
         cords.x *= BOX_WIDTH / background_texture_rect.w;
         cords.y *= BOX_HEIGHT / background_texture_rect.h;
 
-        AddPoint(&points, cords, args.point);
+        AddPoint(&points, cords, NULL, args.point);
 
         return menu;
 }
@@ -95,7 +95,7 @@ void *Menu_AddPointToStart(void *menu, void *args_vpointer) {
         cords.x *= BOX_WIDTH / background_texture_rect.w;
         cords.y *= BOX_HEIGHT / background_texture_rect.h;
 
-        AddPoint_tostart(&points, cords);
+        AddPoint_tostart(&points, cords, NULL);
 
         return menu;
 }

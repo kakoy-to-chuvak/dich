@@ -314,10 +314,11 @@ bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, 
 
 
 
-void AddPoint(PArray *points, SDL_FPoint cords, Point *line) {
+void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line) {
         Point *new = malloc(sizeof(Point));
         if ( new == NULL ) {
                 LogError("AddPoint", "couldn`n allocate memory");
+                return;
         }
 
         if ( cords.x < 0 )
@@ -332,11 +333,14 @@ void AddPoint(PArray *points, SDL_FPoint cords, Point *line) {
                 cords.y = BOX_HEIGHT;
 
         *new = (Point){
-                cords, 
+                cords,
+                0,
                 PSTATE_NONE_STATE, PSTATE_NONE_STATE,
                 NULL,
                 NULL
         };
+
+        
 
         if ( line && line->next ) {
                 SDL_FPoint ac = Vector_Sub( cords, line->cords );
@@ -370,9 +374,13 @@ void AddPoint(PArray *points, SDL_FPoint cords, Point *line) {
 
         now->next = new;
         new->prev = now;
+
+        if ( angle ) {
+                new->angle = *angle;
+        }
 }
 
-void AddPoint_tostart(PArray *points, SDL_FPoint cords) {
+void AddPoint_tostart(PArray *points, SDL_FPoint cords, float *angle) {
         Point *new = malloc(sizeof(Point));
         if ( new == NULL ) {
                 LogError("AddPoint", "couldn`n allocate memory");
@@ -390,7 +398,8 @@ void AddPoint_tostart(PArray *points, SDL_FPoint cords) {
                 cords.y = BOX_HEIGHT;
                 
         *new = (Point){
-                cords, 
+                cords,
+                0,
                 PSTATE_NONE_STATE, PSTATE_NONE_STATE,
                 NULL,
                 NULL
@@ -400,6 +409,10 @@ void AddPoint_tostart(PArray *points, SDL_FPoint cords) {
         points->points = new;
         if ( new->next ) {
                 new->next->prev = new;
+        }
+
+        if ( angle ) {
+                new->angle = *angle;
         }
 }
 

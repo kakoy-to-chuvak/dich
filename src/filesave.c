@@ -21,19 +21,19 @@ void SavePoints(PArray* _Points) {
                 return;
         }
 
-        char *print_format = "%.3f %.3f\n";
+        char *print_format = "%.4f %.4f %.10f\n";
 
         switch (_Points->format) {
                 case FILE_FORMAT_JSON:
-                        print_format = "[%.3f,%.3f],";
+                        print_format = "{\"x\":%.4f,\"y\":%.4f,\"angle\":%.10f],";
                         fputc('[', file);
                         if ( _Points->points == NULL ) {
                                 fputc(' ', file);
                         }
                         break;
                 case FILE_FORMAT_CSV:
-                        print_format = "%.3f,%.3f\n";
-                        fputs("x,y\n", file);
+                        print_format = "%.4f,%.4f,%.10f\n";
+                        fputs("x,y,angle\n", file);
                         break;
                 default:
                         break;
@@ -41,7 +41,7 @@ void SavePoints(PArray* _Points) {
 
         Point *now = _Points->points;
         while ( now ) {
-                fprintf(file, print_format, now->cords.x, now->cords.y);
+                fprintf(file, print_format, now->cords.x, now->cords.y, now->angle);
                 now = now->next;
         }
 
@@ -65,18 +65,20 @@ static void SDLCALL __SaveFileDialogCallback(void* userdata, const char* const* 
                 return;
         }
 
+        char *extension = strrchr(*filelist, '.');
+        if ( extension ) {
+                extension++;
+        }
+
         FILESAVE_FORMAT format = FILE_FORMAT_UNDEFINED;
         if ( filter >= 0 && filter < 3 ) {
                 format = (FILESAVE_FORMAT)filter;
         } else {
                 // define save format by extension
-                char *extension = strrchr(*filelist, '.');
                 if ( extension == NULL ) {
                         format = FILE_FORMAT_PTS;
                         goto save_points;
                 }
-
-                extension++;
                 
                 if ( strcmp(extension, "csv") == 0 ) {
                         format = FILE_FORMAT_CSV;
@@ -92,11 +94,25 @@ static void SDLCALL __SaveFileDialogCallback(void* userdata, const char* const* 
         ((PArray*)userdata)->format = format;
         strcpy_s(((PArray*)userdata)->file_name, MAX_PATH, *filelist);
 
+        switch ( filter ) {
+                case 0: 
+                        if ( extension == NULL || strcmp(extension, "json") )
+                                strcat_s(((PArray*)userdata)->file_name, MAX_PATH, ".json");
+                        break;
+                case 1:
+                        if ( extension == NULL || strcmp(extension, "pts") )
+                                strcat_s(((PArray*)userdata)->file_name, MAX_PATH, ".pts");
+                        break;
+                case 2:
+                        if ( extension == NULL || strcmp(extension, "csv") )
+                                strcat_s(((PArray*)userdata)->file_name, MAX_PATH, ".csv");
+                        break;
+                default:
+                        break;
+        } 
+
         SavePoints(userdata);
 }
-
-
-
 
 
 void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points) {
@@ -104,32 +120,90 @@ void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, PArr
 }
 
 
-// void __ParseCSV(PArray *_Points, FILE *stream) {
-        
-// }
 
-void __ParsePTS(PArray *_Points, FILE *stream) {
+
+
+void __ParseCSV(PArray *_Points, FILE *_Stream) {
         float x = 0;
         float y = 0;
+        float angle = 0;
 
         char buffer[1024] = "";
 
-        while ( fgets(buffer, sizeof(buffer), stream) ) {
-                int n = sscanf(buffer, "%f %f", &x, &y);
-                if ( n == 2 ) {
-                        AddPoint(_Points, (SDL_FPoint){x,y}, NULL);
+        if ( fgets(buffer, sizeof(buffer), _Stream) == 0 ) {
+                LogNotice("ShowOpenFIleDialog (LoadPoints)", "couldn`t read file");  
+        }
+
+        int n = strlen(buffer) - 1;
+        if ( buffer[n] == '\n' ) 
+                buffer[n] = '\0';
+
+        if ( strcmp(buffer, "x,y,angle") ) {
+                LogNotice("ShowOpenFIleDialog (LoadPoints)", "wrong format for <.csv>: \"%s\" expected \"x,y,angle\"", buffer);
+                return;
+        }
+
+        while ( fgets(buffer, sizeof(buffer), _Stream) ) {
+                int n = sscanf(buffer, "%f,%f,%f", &x, &y, &angle);
+                if ( n == 3 ) {
+                        AddPoint(_Points, (SDL_FPoint){x,y}, &angle, NULL);
                 } else {
                         n = strlen(buffer) - 1;
                         if ( buffer[n] == '\n' ) 
                                 buffer[n] = '\0';
-                        LogNotice("ShowOpenFIleDialog (LoadPoints)", "wrong format for \".pts\": \"%s\"", buffer);
+                        LogNotice("ShowOpenFIleDialog (LoadPoints)", "wrong format for <.csv>: \"%s\"", buffer);
                 }
         }
 }
 
-// void __ParseJSON(PArray *_Points, FILE *stream) {
-        
-// }
+void __ParsePTS(PArray *_Points, FILE *_Stream) {
+        float x = 0;
+        float y = 0;
+        float angle = 0;
+
+        char buffer[1024] = "";
+
+        while ( fgets(buffer, sizeof(buffer), _Stream) ) {
+                int n = sscanf(buffer, "%f %f %f", &x, &y, &angle);
+                if ( n == 3 ) {
+                        AddPoint(_Points, (SDL_FPoint){x,y}, &angle, NULL);
+                } else {
+                        n = strlen(buffer) - 1;
+                        if ( buffer[n] == '\n' ) 
+                                buffer[n] = '\0';
+                        LogNotice("ShowOpenFIleDialog (LoadPoints)", "wrong format for <.pts>: \"%s\"", buffer);
+                }
+        }
+}
+
+void __ParseJSON(PArray *_Points, FILE *_Stream) {
+        float x = 0;
+        float y = 0;
+        float angle = 0;
+
+        // get file size
+        fseek(_Stream, 0 , SEEK_END);
+        long file_size = ftell(_Stream);
+        fseek(_Stream, 0, SEEK_SET);
+
+        if ( file_size > 134217728 ) {
+                LogNotice("ShowOpenFIleDialog (LoadPoints)", "File too large (128MB)");
+                return;
+        }
+
+        char *buffer = (char*)malloc(file_size + 1);
+
+        if ( fread(buffer, 1, file_size, _Stream) != file_size ) {
+                LogNotice("ShowOpenFIleDialog (LoadPoints)", "couldn`t read file");
+                free(buffer);
+                return;
+        }
+
+
+
+
+        free(buffer);
+}
 
 
 void LoadPoints(PArray* _Points) {
@@ -140,7 +214,7 @@ void LoadPoints(PArray* _Points) {
         
         switch ( _Points->format ) {
                 case FILE_FORMAT_CSV:
-                        __ParsePTS(_Points, file);
+                        __ParseCSV(_Points, file);
                         break;
                 case FILE_FORMAT_JSON:
                         __ParsePTS(_Points, file);

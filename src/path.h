@@ -23,6 +23,7 @@ typedef enum PState {
 
 typedef struct Point {
         SDL_FPoint cords;
+        float angle;
         PState state;
         PState line_state;
         struct Point *next;
@@ -48,9 +49,11 @@ typedef struct PArray {
 
 
 void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label, SDL_FRect texture_box);
+
 bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed, bool alt_pressed);
-void AddPoint(PArray *points, SDL_FPoint cords, Point *line);
-void AddPoint_tostart(PArray *points, SDL_FPoint cords);
+
+void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line);
+void AddPoint_tostart(PArray *points, SDL_FPoint cords, float *angle);
 void DelPoint(PArray *points, Point *point);
 
 void FreePoints(PArray *_Points);
