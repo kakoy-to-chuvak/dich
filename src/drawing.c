@@ -11,31 +11,31 @@ void RenderLine(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, int32_t ra
         int32_t x1 = P1.x;
         int32_t y1 = P1.y;
 
-        while ( x >= y ) {
-                SDL_RenderLine(renderer, x0 + x, y0 + y, x1 + x, y1 + y);
-                SDL_RenderLine(renderer, x0 + x, y0 - y, x1 + x, y1 - y);
-                SDL_RenderLine(renderer, x0 - x, y0 + y, x1 - x, y1 + y);
-                SDL_RenderLine(renderer, x0 - x, y0 - y, x1 - x, y1 - y);
-                SDL_RenderLine(renderer, x0 + y, y0 + x, x1 + y, y1 + x);
-                SDL_RenderLine(renderer, x0 + y, y0 - x, x1 + y, y1 - x);
-                SDL_RenderLine(renderer, x0 - y, y0 + x, x1 - y, y1 + x);
-                SDL_RenderLine(renderer, x0 - y, y0 - x, x1 - y, y1 - x);
-
+        while ( x > y ) {
                 if (err <= 0) {
-        	    y += 1;
-        	    err += 2*y + 1;
+                        y += 1;
+                        err += 2*y + 1;
         	} else {
-        	    x -= 1;
-        	    err -= 2*x + 1;
+                        x -= 1;
+                        err -= 2*x + 1;
         	}
+                
+                SDL_RenderLine(renderer,  x0 + x - 1,  y0 + y - 1,  x1 + x - 1,  y1 + y - 1 );
+                SDL_RenderLine(renderer,  x0 + x - 1,  y0 - y    ,  x1 + x - 1,  y1 - y     );
+                SDL_RenderLine(renderer,  x0 - x    ,  y0 + y - 1,  x1 - x    ,  y1 + y - 1 );
+                SDL_RenderLine(renderer,  x0 - x    ,  y0 - y    ,  x1 - x    ,  y1 - y     );
+                SDL_RenderLine(renderer,  x0 + y - 1,  y0 + x - 1,  x1 + y - 1,  y1 + x - 1 );
+                SDL_RenderLine(renderer,  x0 + y - 1,  y0 - x    ,  x1 + y - 1,  y1 - x     );
+                SDL_RenderLine(renderer,  x0 - y    ,  y0 + x - 1,  x1 - y    ,  y1 + x - 1 );
+                SDL_RenderLine(renderer,  x0 - y    ,  y0 - x    ,  x1 - y    ,  y1 - x     );
         }
 }
-                        
 
-void RenderArrow(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, double base, SDL_FColor arrow_color) {
+
+void RenderArrow(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, double base, SDL_FColor arrow_color, int32_t P1_radius) {
         SDL_FPoint Pa = Vector_Norm( Vector_Sub(P1, P0) );
 
-        P1 = Vector_Sub(P1, Vector_Mult_scl(Pa, POINT_RADIUS + base));
+        P1 = Vector_Sub(P1, Vector_Mult_scl(Pa, P1_radius + base));
 
         SDL_Vertex vertex[3];
 
@@ -57,10 +57,10 @@ void RenderArrow(SDL_Renderer *renderer, SDL_FPoint P0, SDL_FPoint P1, double ba
 }
 
 
-void RenderCircle(SDL_Renderer *renderer, float x0, float y0, float radius) {
-        float x = 0;
-        float y = radius;
-        float p = 1 - radius;
+void RenderCircle(SDL_Renderer *renderer, int32_t x0, int32_t y0, int32_t radius) {
+        int32_t x = 0;
+        int32_t y = radius;
+        int32_t p = 1 - radius;
 
         SDL_RenderPoint(renderer, x0 + x, y0 + y);
         SDL_RenderPoint(renderer, x0 + y, y0 + x);
@@ -97,7 +97,7 @@ void RenderCircle(SDL_Renderer *renderer, float x0, float y0, float radius) {
 }
 
 
-void Render_RounderRect(SDL_Renderer *renderer, SDL_FRect rect, float radius) {
+void Render_RounderRect(SDL_Renderer *renderer, SDL_FRect rect, int32_t radius) {
         
         SDL_FRect now_rect = {
                 rect.x,
@@ -111,17 +111,17 @@ void Render_RounderRect(SDL_Renderer *renderer, SDL_FRect rect, float radius) {
         if ( radius )
                 radius--;
                 
-        float x_l = rect.x + radius;
-        float y_u = rect.y + radius;
-        float x_r = rect.x + rect.w - radius - 1;
-        float y_b = rect.y + rect.h - radius - 1;
+        int32_t x_l = rect.x + radius;
+        int32_t y_u = rect.y + radius;
+        int32_t x_r = rect.x + rect.w - radius - 1;
+        int32_t y_b = rect.y + rect.h - radius - 1;
 
-        float x = 0;
-        float y = radius;
-        float p = 1 - radius;
+        int32_t x = 0;
+        int32_t y = radius;
+        int32_t p = 1 - radius;
 
-        float y_next = p < 0 ? y : y - 1;
-        float p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
+        int32_t y_next = p < 0 ? y : y - 1;
+        int32_t p_next = p < 0 ? p + 2 * x + 1 : p + 2 * ( x - y ) + 1;
         
         SDL_RenderLine(renderer, x_l - y, y_u - x, x_r + y, y_u - x);
         SDL_RenderLine(renderer, x_l - y, y_b + x, x_r + y, y_b + x);
@@ -153,3 +153,27 @@ void Render_RounderRect(SDL_Renderer *renderer, SDL_FRect rect, float radius) {
 }
 
 
+
+
+void RenderCross(SDL_Renderer *_Renderer, SDL_FPoint _Center) {
+        SDL_RenderLine(_Renderer, _Center.x, 0, _Center.x, 10000);
+        SDL_RenderLine(_Renderer, 0, _Center.y, 10000, _Center.y);
+        SDL_RenderLine(_Renderer, _Center.x - 10000, _Center.y - 10000, _Center.x + 10000, _Center.y + 10000);
+        SDL_RenderLine(_Renderer, _Center.x - 10000, _Center.y + 10000, _Center.x + 10000, _Center.y - 10000);
+}
+
+
+
+void RenderVector(SDL_Renderer *_Renderer, SDL_FPoint _Start, SDL_FPoint _End, int32_t width, int32_t arrow_width) {
+        RenderLine(_Renderer, _Start, _End, width);
+
+        SDL_FColor arrow_color = {
+                0,
+                0,
+                0,
+                0
+        };
+        SDL_GetRenderDrawColorFloat(_Renderer, &arrow_color.r, &arrow_color.g, &arrow_color.b, &arrow_color.a);
+        RenderArrow(_Renderer, _Start, _End, arrow_width, arrow_color, -2*width);
+
+}

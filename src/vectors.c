@@ -1,5 +1,5 @@
 #include "vectors.h"
-
+#include <stdio.h>
 
 SDL_FPoint Vector_Sum(SDL_FPoint P1, SDL_FPoint P2) {
         return (SDL_FPoint){ 
@@ -53,9 +53,10 @@ double Vector_Cos(SDL_FPoint P1, SDL_FPoint P2) {
 SDL_FPoint Vector_Rotate(SDL_FPoint P, double rad) {
         double _Cos = cos(rad);
         double _Sin = sin(rad);
+
         return (SDL_FPoint){
-             _Cos * P.x - _Sin * P.y,
-             _Sin * P.x + _Cos * P.y   
+             _Cos * P.x + _Sin * P.y,
+             _Cos * P.y - _Sin * P.x    
         };
 }
 

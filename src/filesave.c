@@ -25,7 +25,7 @@ void SavePoints(PArray* _Points) {
 
         switch (_Points->format) {
                 case FILE_FORMAT_JSON:
-                        print_format = "{\"x\":%.4f,\"y\":%.4f,\"angle\":%.10f],";
+                        print_format = "{\"x\":%.4f,\"y\":%.4f,\"angle\":%.10f},";
                         fputc('[', file);
                         if ( _Points->points == NULL ) {
                                 fputc(' ', file);

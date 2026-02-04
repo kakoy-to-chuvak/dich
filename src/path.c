@@ -75,6 +75,15 @@ void _RenderPoint(SDL_Renderer *renderer, Point *point, SDL_Texture *point_textu
         };
 
         SDL_RenderTexture(renderer, point_texture, NULL, &pos);
+
+        SDL_FPoint angle_vector = {0, POINT_DIAMETR};
+        angle_vector = Vector_Rotate(angle_vector, point->angle);
+        angle_vector.y = -angle_vector.y;
+        angle_vector = Vector_Sum(real_cords, angle_vector);
+
+        SDL_SetRenderDrawColor(renderer, 160, 0, 160, 255);
+        RenderVector(renderer, real_cords, angle_vector, 3, 8);
+        SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255);
 }
 
 
@@ -89,7 +98,7 @@ void _RenderLine(SDL_Renderer *renderer, Point *point, SDL_FColor arrow_Fcolor, 
         SDL_FPoint window_next_cords = CordsToWindow(point->next->cords, texture_box);
         
         RenderLine(renderer, window_cords, window_next_cords, LINE_RADIUS);
-        RenderArrow(renderer, window_cords, window_next_cords, ARROW_BASE, arrow_Fcolor);
+        RenderArrow(renderer, window_cords, window_next_cords, ARROW_BASE, arrow_Fcolor, POINT_RADIUS);
 
         SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255); 
 }
@@ -104,11 +113,12 @@ void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *poin
         Point *now_point = points->points;
         while ( now_point ) {
                 if ( now_point->next ) {
-                      _RenderLine(renderer, now_point, arrow_Fcolor, texture_box);  
+                        _RenderLine(renderer, now_point, arrow_Fcolor, texture_box);  
                 }
                 
-                if ( now_point->state == PSTATE_NONE_STATE )
+                if ( now_point->state == PSTATE_NONE_STATE ) {
                         _RenderPoint(renderer, now_point, point_texture, texture_box);
+                }
 
                 now_point = now_point->next;
         }
@@ -134,6 +144,9 @@ void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *poin
         
         SDL_SetRenderDrawColor(renderer, 160, 160, 160, 255);
 }
+
+
+
 
 
 
@@ -319,6 +332,8 @@ bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, 
 
 
 
+
+
 void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line) {
         Point *new = malloc(sizeof(Point));
         if ( new == NULL ) {
@@ -382,6 +397,9 @@ void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line) {
 
         if ( angle ) {
                 new->angle = *angle;
+        } else if ( new->prev) {
+                SDL_FPoint Dv = Vector_Sub(new->cords, new->prev->cords);
+                new->angle = acos( Vector_Cos(Dv, (SDL_FPoint){0,-1}) ) * SGN(Dv.x);
         }
 }
 
