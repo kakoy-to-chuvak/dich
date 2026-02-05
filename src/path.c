@@ -491,6 +491,9 @@ void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line) {
                 new->prev = line;
                 line->next->prev = new;
                 line->next = new;
+
+                SDL_FPoint Dv = Vector_Sub(new->cords, new->prev->cords);
+                new->angle = Safe_Angle(Dv);
                 
                 return;
         }
