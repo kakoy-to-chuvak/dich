@@ -10,7 +10,7 @@
 #include <SDL3/SDL_mouse.h>
 
 
-#include "include.h"
+#include "parametrs.h"
 #include "label.h"
 #include "App.h"
 #include "logs.h"
@@ -32,16 +32,7 @@ MENU_BUTTON *menu_buttons[3];
 SDL_Texture *background_texture = NULL;
 SDL_Texture *point_texture = NULL;
 
-static int window_w = 0;
-static int window_h = 0;
-
-static SDL_FRect background_texture_rect;
-
-bool lmb_pressed = 0;
-bool rmb_pressed = 0;
-bool shift_pressed = 0;
-bool ctrl_pressed = 0;
-bool alt_pressed = 0;
+Parametrs parametrs;
 
 
 PArray points = {
@@ -63,11 +54,11 @@ void *Menu_AddPoint(void *menu, void *args_vpointer) {
         struct menu_args args = *((struct menu_args*)args_vpointer);
         SDL_FPoint cords = args.cords;
         
-        cords.x -= background_texture_rect.x;
-        cords.y -= background_texture_rect.y;
+        cords.x -= parametrs.texture_box.x;
+        cords.y -= parametrs.texture_box.y;
 
-        cords.x *= BOX_WIDTH / background_texture_rect.w;
-        cords.y *= BOX_HEIGHT / background_texture_rect.h;
+        cords.x *= BOX_WIDTH / parametrs.texture_box.w;
+        cords.y *= BOX_HEIGHT / parametrs.texture_box.h;
 
         AddPoint(&points, cords, NULL, args.point);
 
@@ -88,11 +79,11 @@ void *Menu_AddPointToStart(void *menu, void *args_vpointer) {
 
         SDL_FPoint cords = args.cords;
         
-        cords.x -= background_texture_rect.x;
-        cords.y -= background_texture_rect.y;
+        cords.x -= parametrs.texture_box.x;
+        cords.y -= parametrs.texture_box.y;
 
-        cords.x *= BOX_WIDTH / background_texture_rect.w;
-        cords.y *= BOX_HEIGHT / background_texture_rect.h;
+        cords.x *= BOX_WIDTH / parametrs.texture_box.w;
+        cords.y *= BOX_HEIGHT / parametrs.texture_box.h;
 
         AddPoint_tostart(&points, cords, NULL);
 
@@ -107,9 +98,9 @@ int render(APP *app) {
         SDL_SetRenderDrawColor(app->Renderer, 0, 0, 0, 255);
         SDL_RenderClear(app->Renderer);
 
-        SDL_RenderTexture(app->Renderer, background_texture, NULL, &background_texture_rect);
+        SDL_RenderTexture(app->Renderer, background_texture, NULL, &parametrs.texture_box);
 
-        RenderPath(app->Renderer, point_texture, &points, point_text, background_texture_rect);
+        RenderPath(app->Renderer, point_texture, &points, point_text, &parametrs);
 
         Menu_Render(menu);
         
@@ -118,7 +109,7 @@ int render(APP *app) {
 }
 
 
-int setup(APP *app) {   
+int setup(APP *app) {
         LogDebug("setup", "IMG_Load: loading [images/point.png] to [tmp_surf]" );
         SDL_Surface *tmp_surf = IMG_Load("images/point.png");
         if ( NULL == tmp_surf ) {
@@ -231,17 +222,17 @@ int Tick(APP *app) {
                                 mouse_pos.y = event.motion.y;
                                 break;
                         case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                                if ( event.button.button == 1 ) {
-                                        lmb_pressed = 1;
-                                } else if ( event.button.button == 3 ) {
-                                        rmb_pressed = 1;
+                                if ( event.button.button == SDL_BUTTON_LEFT ) {
+                                        parametrs.lmb_pressed = 1;
+                                } else if ( event.button.button == SDL_BUTTON_RIGHT ) {
+                                        parametrs.rmb_pressed = 1;
                                 }
                                 break;
                         case SDL_EVENT_MOUSE_BUTTON_UP:
-                                if ( event.button.button == 1 ) {
-                                        lmb_pressed = 0;
-                                } else if ( event.button.button == 3 ) { 
-                                        rmb_pressed = 0;
+                                if ( event.button.button == SDL_BUTTON_LEFT ) {
+                                        parametrs.lmb_pressed = 0;
+                                } else if ( event.button.button == SDL_BUTTON_RIGHT ) { 
+                                        parametrs.rmb_pressed = 0;
                                 }
                                 break; 
                         case SDL_EVENT_KEY_DOWN: 
@@ -251,26 +242,26 @@ int Tick(APP *app) {
                                                 return 0;
                                                 break;
                                         case SDL_SCANCODE_LSHIFT:
-                                                shift_pressed = 1;
+                                                parametrs.shift_pressed = 1;
                                                 break;
                                         case SDL_SCANCODE_LCTRL:
-                                                ctrl_pressed = 1;
+                                                parametrs.ctrl_pressed = 1;
                                                 break;
                                         case SDL_SCANCODE_LALT:
-                                                alt_pressed = 1;
+                                                parametrs.alt_pressed = 1;
                                                 break;
                                         case SDL_SCANCODE_S:
-                                                if ( ctrl_pressed == 0 )
+                                                if ( parametrs.ctrl_pressed == 0 )
                                                         break;
 
-                                                if ( shift_pressed == 1 || *points.file_name == 0 )
+                                                if ( parametrs.shift_pressed == 1 || *points.file_name == 0 )
                                                         ShowSaveFIleDialog(NULL, NULL, &points);
                                                 else
                                                         SavePoints(&points);
                                                 
                                                 break;
                                         case SDL_SCANCODE_O:
-                                                if ( ctrl_pressed == 0 )
+                                                if ( parametrs.ctrl_pressed == 0 )
                                                         break;
 
                                                 ShowOpenFIleDialog(NULL, NULL, &points);
@@ -290,35 +281,20 @@ int Tick(APP *app) {
                         case SDL_EVENT_KEY_UP:
                                 switch ( event.key.scancode ) {
                                         case SDL_SCANCODE_LSHIFT:
-                                                shift_pressed = 0;
+                                                parametrs.shift_pressed = 0;
                                                 break;
                                         case SDL_SCANCODE_LCTRL:
-                                                ctrl_pressed = 0;
+                                                parametrs.ctrl_pressed = 0;
                                                 break;
                                         case SDL_SCANCODE_LALT:
-                                                alt_pressed = 0;
+                                                parametrs.alt_pressed = 0;
                                                 break;
                                         default:
                                                 break;
                                 }
                                 break;
                         case SDL_EVENT_WINDOW_RESIZED:
-                                SDL_GetWindowSize(app->Window, &window_w, &window_h);
-                                float k = BOX_WIDTH / BOX_HEIGHT;
-                                
-                                // resize background texture
-                                if ( ((float)window_w) / ((float)window_h) > k ) {
-                                        background_texture_rect.w = window_h * k;
-                                        background_texture_rect.h = window_h;
-                                        background_texture_rect.y = 0;
-                                        background_texture_rect.x = ( window_w - background_texture_rect.w ) / 2;
-                                } else {
-                                        background_texture_rect.h = window_w / k;
-                                        background_texture_rect.w = window_w;
-                                        background_texture_rect.x = 0;
-                                        background_texture_rect.y = ( window_h - background_texture_rect.h ) / 2;
-                                }
-
+                                ParametrsFixValues(&parametrs, app->Window);
                                 points.changed = 1;
                                 break;
                         default:
@@ -328,10 +304,10 @@ int Tick(APP *app) {
         
 
         static bool prev_lmb_state = 0;
-        bool lmb_clicked = lmb_pressed && prev_lmb_state == 0;
+        bool lmb_clicked = parametrs.lmb_pressed && prev_lmb_state == 0;
 
         static bool prev_rmb_state = 0;
-        bool rmb_clicked = rmb_pressed && prev_rmb_state == 0;
+        bool rmb_clicked = parametrs.rmb_pressed && prev_rmb_state == 0;
 
         static struct menu_args args = {
                 NULL,
@@ -339,12 +315,12 @@ int Tick(APP *app) {
         };
 
         
-        CheckMousePos(&points, mouse_pos, background_texture_rect, lmb_pressed, prev_lmb_state, shift_pressed, ctrl_pressed, alt_pressed);
+        CheckMousePos(&points, mouse_pos, &parametrs );
         
         if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_pos.x, mouse_pos.y) ) ) {
                 args.cords = mouse_pos;
 
-                Menu_Move(menu, mouse_pos.x, mouse_pos.y, window_w, window_h);
+                Menu_Move(menu, mouse_pos.x, mouse_pos.y, parametrs.window_w, parametrs.window_h);
                 menu->active = 1;
                 points.changed = 1;
 
@@ -361,8 +337,8 @@ int Tick(APP *app) {
 
         points.changed |= Menu_CheckUpdate(menu, mouse_pos.x, mouse_pos.y, lmb_clicked | rmb_clicked, &args);
 
-        prev_lmb_state = lmb_pressed;
-        prev_rmb_state = rmb_pressed;
+        parametrs.prev_lmb_state = parametrs.lmb_pressed;
+        parametrs.prev_rmb_state = parametrs.rmb_pressed;
 
         if ( points.changed ) {
                 render(app);
@@ -389,25 +365,19 @@ int main() {
                 return 0;
         }   
 
-        app = AppNew("Планировщик маршрута", 0, 0, SDL_WINDOW_RESIZABLE, NULL);
+        app = AppNew("Планировщик маршрута", 600, 400, SDL_WINDOW_RESIZABLE, NULL);
         if ( NULL==app ) {
                 LogError("main", "AppNew failed");
                 goto app_quit;
         }
-        
+
+        ParametrsInit(&parametrs, app->Window);
+        printf("%i %i %i %i\n%f %f %f %f\n\n", parametrs.point_radius, parametrs.line_width, parametrs.dir_vector_legth, parametrs.dir_vector_width, parametrs.fixed_point_radius, parametrs.fixed_line_width, parametrs.fixed_dir_vector_legth, parametrs.fixed_dir_vector_width);
+
         if ( 0==setup(app) ) {
                 LogError("main", "setup failed");
                 goto app_quit;
         }
-
-        window_w = background_texture->w;
-        window_h = window_w / BOX_WIDTH * BOX_HEIGHT;
-        SDL_SetWindowSize(app->Window, window_w, window_h);
-
-        background_texture_rect.w = window_w;
-        background_texture_rect.h = window_h;
-        background_texture_rect.x = 0;
-        background_texture_rect.y = 0;
 
 
         AppSetTick(app, Tick);

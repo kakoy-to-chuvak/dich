@@ -8,7 +8,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "include.h"
+#include "parametrs.h"
 #include "vectors.h"
 #include "drawing.h"
 #include "label.h"
@@ -52,9 +52,9 @@ typedef struct PArray {
 
 
 
-void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label, SDL_FRect texture_box);
+void RenderPath(SDL_Renderer *renderer, SDL_Texture *point_texture, PArray *points, LABEL *point_label, Parametrs *_Parametrs);
 
-bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, SDL_FRect texture_box, bool mouse_pressed, bool prev_mouse_state, bool shift_pressed, bool ctrl_pressed, bool alt_pressed);
+bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, Parametrs *_Parametrs);
 
 void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line);
 void AddPoint_tostart(PArray *points, SDL_FPoint cords, float *angle);

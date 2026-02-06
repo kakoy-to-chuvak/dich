@@ -65,6 +65,12 @@ static void SDLCALL __SaveFileDialogCallback(void* userdata, const char* const* 
                 return;
         }
 
+        FileSaveArgs *args = (FileSaveArgs*)userdata;
+        if ( args == NULL || args->points == NULL || args->parametrs == NULL ) {
+                LogNotice("ShowSaveFIleDialog (__SaveFileDialogCallback)", "No args received");
+                return;
+        }
+
         char *extension = strrchr(*filelist, '.');
         if ( extension ) {
                 extension++;
@@ -91,39 +97,45 @@ static void SDLCALL __SaveFileDialogCallback(void* userdata, const char* const* 
 
         save_points:
 
-        ((PArray*)userdata)->format = format;
-        strcpy_s(((PArray*)userdata)->file_name, MAX_PATH, *filelist);
+        args->points->format = format;
+        strcpy_s(args->points->file_name, MAX_PATH, *filelist);
 
         switch ( filter ) {
                 case 0: 
                         if ( extension == NULL || strcmp(extension, "json") )
-                                strcat_s(((PArray*)userdata)->file_name, MAX_PATH, ".json");
+                                strcat_s(args->points->file_name, MAX_PATH, ".json");
                         break;
                 case 1:
                         if ( extension == NULL || strcmp(extension, "pts") )
-                                strcat_s(((PArray*)userdata)->file_name, MAX_PATH, ".pts");
+                                strcat_s(args->points->file_name, MAX_PATH, ".pts");
                         break;
                 case 2:
                         if ( extension == NULL || strcmp(extension, "csv") )
-                                strcat_s(((PArray*)userdata)->file_name, MAX_PATH, ".csv");
+                                strcat_s(args->points->file_name, MAX_PATH, ".csv");
                         break;
                 default:
                         break;
         } 
 
-        SavePoints(userdata);
+        SavePoints(args->points);
 }
 
 
-void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points) {
-        SDL_ShowSaveFileDialog(__SaveFileDialogCallback, _Points, _Window, dialog_filters, 4, _Default_location);
+void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, FileSaveArgs *_Args) {
+        SDL_ShowSaveFileDialog(__SaveFileDialogCallback, _Args, _Window, dialog_filters, 4, _Default_location);
 }
 
 
 
 
 
-void __ParseCSV(PArray *_Points, FILE *_Stream) {
+
+
+
+
+
+
+void __ParseCSV(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
         float x = 0;
         float y = 0;
         float angle = 0;
@@ -146,7 +158,7 @@ void __ParseCSV(PArray *_Points, FILE *_Stream) {
         while ( fgets(buffer, sizeof(buffer), _Stream) ) {
                 int n = sscanf(buffer, "%f,%f,%f", &x, &y, &angle);
                 if ( n == 3 ) {
-                        AddPoint(_Points, (SDL_FPoint){x,y}, &angle, NULL);
+                        AddPoint(_Points, (SDL_FPoint){x,y}, &angle, NULL, _Parametrs);
                 } else {
                         n = strlen(buffer) - 1;
                         if ( buffer[n] == '\n' ) 
@@ -156,7 +168,7 @@ void __ParseCSV(PArray *_Points, FILE *_Stream) {
         }
 }
 
-void __ParsePTS(PArray *_Points, FILE *_Stream) {
+void __ParsePTS(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
         float x = 0;
         float y = 0;
         float angle = 0;
@@ -166,7 +178,7 @@ void __ParsePTS(PArray *_Points, FILE *_Stream) {
         while ( fgets(buffer, sizeof(buffer), _Stream) ) {
                 int n = sscanf(buffer, "%f %f %f", &x, &y, &angle);
                 if ( n == 3 ) {
-                        AddPoint(_Points, (SDL_FPoint){x,y}, &angle, NULL);
+                        AddPoint(_Points, (SDL_FPoint){x,y}, &angle, NULL, _Parametrs);
                 } else {
                         n = strlen(buffer) - 1;
                         if ( buffer[n] == '\n' ) 
@@ -176,37 +188,55 @@ void __ParsePTS(PArray *_Points, FILE *_Stream) {
         }
 }
 
-// void __ParseJSON(PArray *_Points, FILE *_Stream) {
-//         float x = 0;
-//         float y = 0;
-//         float angle = 0;
 
-//         // get file size
-//         fseek(_Stream, 0 , SEEK_END);
-//         long file_size = ftell(_Stream);
-//         fseek(_Stream, 0, SEEK_SET);
+void _Remove_Spaces(char *_Str) {
+        char *pr = _Str, 
+             *pw = _Str;
 
-//         if ( file_size > 134217728 ) {
-//                 LogNotice("ShowOpenFIleDialog (LoadPoints)", "File too large (128MB)");
-//                 return;
-//         }
-
-//         char *buffer = (char*)malloc(file_size + 1);
-
-//         if ( fread(buffer, 1, file_size, _Stream) != file_size ) {
-//                 LogNotice("ShowOpenFIleDialog (LoadPoints)", "couldn`t read file");
-//                 free(buffer);
-//                 return;
-//         }
+        while (*pr) {
+                *pw = *pr;
+                pr++;
+                pw += !(*pw == ' ' || *pw == '\n' || *pw == '\t' || *pw == '\r' );
+        }
+        *pw = '\0';
+}
 
 
+void __ParseJSON(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
+        float x = 0;
+        float y = 0;
+        float angle = 0;
+
+        // get file size
+        fseek(_Stream, 0 , SEEK_END);
+        size_t file_size = ftell(_Stream);
+        fseek(_Stream, 0, SEEK_SET);
+
+        if ( file_size > 134217728 ) {
+                LogNotice("ShowOpenFIleDialog (LoadPoints)", "File too large (128MB)");
+                return;
+        }
+
+        char *buffer = (char*)malloc(file_size + 1);
+
+        size_t buffer_size = fread(buffer, 1, file_size, _Stream);
+        if (  buffer_size == 0 ) {
+                LogNotice("ShowOpenFIleDialog (LoadPoints)", "couldn`t read file");
+                free(buffer);
+                return;
+        }
+
+        buffer[buffer_size] = '\0';
+        _Remove_Spaces(buffer);
+
+        printf("%f %f %f %p %p\n%s\n", x, y, angle, _Points, _Parametrs, buffer);
 
 
-//         free(buffer);
-// }
+        free(buffer);
+}
 
 
-void LoadPoints(PArray* _Points) {
+void LoadPoints(PArray* _Points, Parametrs *_Parametrs) {
         FreePoints(_Points);
         _Points->points = NULL;
 
@@ -214,13 +244,13 @@ void LoadPoints(PArray* _Points) {
         
         switch ( _Points->format ) {
                 case FILE_FORMAT_CSV:
-                        __ParseCSV(_Points, file);
+                        __ParseCSV(_Points, file, _Parametrs);
                         break;
                 case FILE_FORMAT_JSON:
-                        __ParsePTS(_Points, file);
+                        __ParseJSON(_Points, file, _Parametrs);
                         break;
                 default:
-                        __ParsePTS(_Points, file);
+                        __ParsePTS(_Points, file, _Parametrs);
         }
 
         _Points->changed = 1;
@@ -235,6 +265,12 @@ static void SDLCALL __OpenFileDialogCallback(void* userdata, const char* const* 
 
         if ( *filelist == NULL ) {
                 LogNotice("ShowOpenFIleDialog (__OpenFileDialogCallback)", "No files selected");
+                return;
+        }
+
+        FileSaveArgs *args = (FileSaveArgs*)userdata;
+        if ( args == NULL || args->points == NULL || args->parametrs == NULL ) {
+                LogNotice("ShowSaveFIleDialog (__SaveFileDialogCallback)", "No args received");
                 return;
         }
 
@@ -262,13 +298,13 @@ static void SDLCALL __OpenFileDialogCallback(void* userdata, const char* const* 
 
         save_points:
 
-        ((PArray*)userdata)->format = format;
-        strcpy_s(((PArray*)userdata)->file_name, MAX_PATH, *filelist);
+        args->points->format = format;
+        strcpy_s(args->points->file_name, MAX_PATH, *filelist);
 
-        LoadPoints(userdata);
+        LoadPoints(args->points, args->parametrs);
 }
 
 
-void ShowOpenFIleDialog(SDL_Window *_Window, const char *_Default_location, PArray *_Points) {
-        SDL_ShowOpenFileDialog(__OpenFileDialogCallback, _Points, _Window, dialog_filters, 4, _Default_location, 0);
+void ShowOpenFIleDialog(SDL_Window *_Window, const char *_Default_location, FileSaveArgs *_Args) {
+        SDL_ShowOpenFileDialog(__OpenFileDialogCallback, _Args, _Window, dialog_filters, 4, _Default_location, 0);
 }

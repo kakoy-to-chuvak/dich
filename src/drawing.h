@@ -4,7 +4,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "include.h"
+#include "parametrs.h"
 #include "vectors.h"
 
 
