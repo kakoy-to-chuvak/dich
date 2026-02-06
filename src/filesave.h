@@ -16,6 +16,8 @@ typedef struct FileSaveArgs {
 
 } FileSaveArgs;
 
+FILESAVE_FORMAT DefineFileFormat(char *_File_name);
+
 void SavePoints(PArray *_Points);
 void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, FileSaveArgs *_Args);
 

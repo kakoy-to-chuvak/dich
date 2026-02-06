@@ -9,6 +9,25 @@ static const SDL_DialogFileFilter dialog_filters[4] = {
 };
 
 
+
+FILESAVE_FORMAT DefineFileFormat(char *_File_name) {
+        char *extension = strrchr(_File_name, '.');
+        if ( extension == NULL ) {
+                return FILE_FORMAT_PTS;
+        }
+
+        extension++;
+
+        if ( strcmp(extension, "csv") == 0 ) {
+                return FILE_FORMAT_CSV;
+        } else if ( strcmp(extension, "json") == 0 ) {
+                return FILE_FORMAT_JSON;
+        } else {
+                return FILE_FORMAT_PTS;
+        }
+}
+
+
 void SavePoints(PArray* _Points) {
         if ( _Points == NULL ) {
                 LogNotice("SavePoints", "No points to save");
@@ -72,45 +91,31 @@ static void SDLCALL __SaveFileDialogCallback(void* userdata, const char* const* 
         }
 
         char *extension = strrchr(*filelist, '.');
-        if ( extension ) {
-                extension++;
-        }
 
         FILESAVE_FORMAT format = FILE_FORMAT_UNDEFINED;
         if ( filter >= 0 && filter < 3 ) {
                 format = (FILESAVE_FORMAT)filter;
         } else {
-                // define save format by extension
-                if ( extension == NULL ) {
-                        format = FILE_FORMAT_PTS;
-                        goto save_points;
-                }
-                
-                if ( strcmp(extension, "csv") == 0 ) {
-                        format = FILE_FORMAT_CSV;
-                } else if ( strcmp(extension, "json") == 0 ) {
-                        format = FILE_FORMAT_JSON;
-                } else {
-                        format = FILE_FORMAT_PTS;
-                }
+                format = DefineFileFormat(extension);
         }
-
-        save_points:
-
+        
         args->points->format = format;
         strcpy_s(args->points->file_name, MAX_PATH, *filelist);
 
         switch ( filter ) {
                 case 0: 
-                        if ( extension == NULL || strcmp(extension, "json") )
+                        // if extension is undefined or not equals ".json"
+                        if ( extension == NULL || strcmp(extension, ".json") )
                                 strcat_s(args->points->file_name, MAX_PATH, ".json");
                         break;
                 case 1:
-                        if ( extension == NULL || strcmp(extension, "pts") )
+                        // if extension is undefined or not equals ".pts"
+                        if ( extension == NULL || strcmp(extension, ".pts") )
                                 strcat_s(args->points->file_name, MAX_PATH, ".pts");
                         break;
                 case 2:
-                        if ( extension == NULL || strcmp(extension, "csv") )
+                        // if extension is undefined or not equals ".csv"
+                        if ( extension == NULL || strcmp(extension, ".csv") )
                                 strcat_s(args->points->file_name, MAX_PATH, ".csv");
                         break;
                 default:

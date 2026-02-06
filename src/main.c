@@ -361,7 +361,24 @@ int Tick(APP *app) {
 
 
 
-int main(int argc, char *argv[] ) {
+int main( int argc, char *argv[] ) {
+        if ( argc == 0 ) {
+                return -1;
+        }
+
+        char *t = strrchr(argv[0], '\\');
+        if ( t == NULL ) {
+                t = strrchr(argv[0], '/');
+                if ( t == NULL ) {
+                        return -1;
+                }
+        }
+
+        *t = '\0';
+        if ( CRP_chdir(argv[0]) ) {
+                return -1;
+        }
+
         Logs_SetFile("logs.log");
         Logs_SetLogLevel(LOG_LEVEL_NOTICE);
         Logs_EnableColors(0);
@@ -391,6 +408,7 @@ int main(int argc, char *argv[] ) {
 
         if ( argc == 2 ) {
                 strcpy_s(points.file_name, MAX_PATH, argv[1]);
+                points.format = DefineFileFormat(argv[1]);
                 LoadPoints(&points, &parametrs);
         } 
 
