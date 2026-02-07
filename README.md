@@ -61,7 +61,7 @@ main.exe {file name}
 5. [Установите SDL3_ttf](https://github.com/libsdl-org/SDL_ttf/blob/main/INSTALL.md)
 
 6. Укажите в MakeFile параметры:
-   - В переменой **SDL_INCLUDE_DIR** укажите папку с папками с ".h" файлами
+   - В переменой **SDL_INCLUDE_DIR** укажите папку с папками с ".h" файлами<br/>
      Ожидаемая структура **SDL_INCLUDE_DIR**:<br/>
      ├── SDL3<br/>
      │   ├── SDL.h<br/>
@@ -72,7 +72,7 @@ main.exe {file name}
      ├── SDL_ttf<br/>
      │   ├── SDL_textengine.h<br/>
      |   └── SDL_ttf.h<br/>
-   - В переменой **SDL_LIBS_DIR** укажите папку с объектными файлами динамических библиотек
+   - В переменой **SDL_LIBS_DIR** укажите папку с объектными файлами динамических библиотек<br/>
      Ожидаемая структура **SDL_LIBS_DIR**:<br/>
      ├── libSDL3.xxx<br/>
      ├── libSDL3_image.xxx<br/>
