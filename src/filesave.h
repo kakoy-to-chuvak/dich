@@ -9,6 +9,7 @@
 #include "path.h"
 #include "logs.h"
 #include "parametrs.h"
+#include "easy_json_parser.h"
 
 typedef struct FileSaveArgs {
         PArray *points;
@@ -16,7 +17,7 @@ typedef struct FileSaveArgs {
 
 } FileSaveArgs;
 
-FILESAVE_FORMAT DefineFileFormat(char *_File_name);
+FILESAVE_FORMAT DefineFileFormat(const char *_File_name);
 
 void SavePoints(PArray *_Points);
 void ShowSaveFIleDialog(SDL_Window *_Window, const char *_Default_location, FileSaveArgs *_Args);

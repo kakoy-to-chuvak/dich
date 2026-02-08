@@ -191,9 +191,11 @@ SDL_FPoint _GetStraightPos( SDL_FPoint pos, SDL_FPoint source_point ) {         
 }
 
 void MovePoint( Point *point, SDL_FPoint pos, Parametrs *_Parametrs ) {
-        
-
-        if ( _Parametrs->ctrl_pressed && point->prev && point->next ) {
+        if ( _Parametrs->alt_pressed && _Parametrs->ctrl_pressed && point->next ) {
+                pos = _GetStraightPos(pos, point->next->cords);
+        } else if ( _Parametrs->alt_pressed && point->prev ) {
+                pos = _GetStraightPos(pos, point->prev->cords);
+        } else if ( _Parametrs->ctrl_pressed && point->prev && point->next ) {
                 SDL_FPoint P1M = Vector_Sub(pos, point->prev->cords);
                 SDL_FPoint P1P2 = Vector_Sub(point->next->cords, point->prev->cords);
 
@@ -209,10 +211,6 @@ void MovePoint( Point *point, SDL_FPoint pos, Parametrs *_Parametrs ) {
                         pos = P1;
                 else
                         pos = Vector_Sum(pos, P2);
-        } else if ( _Parametrs->alt_pressed && _Parametrs->shift_pressed && point->next ) {
-                pos = _GetStraightPos(pos, point->next->cords);
-        } else if ( _Parametrs->alt_pressed && point->prev ) {
-                pos = _GetStraightPos(pos, point->prev->cords);
         } else if ( _Parametrs->shift_pressed ) {
                 pos = _GetStraightPos(pos, start_point);
         } else {
@@ -334,9 +332,25 @@ bool CheckVector(PArray *points, Point *point, SDL_FPoint mouse_pos, Parametrs *
         return 0;
 }
 
-void MoveVector(Point *point, SDL_FPoint pos) {
+void MoveVector(Point *point, SDL_FPoint pos, Parametrs *_Parametrs ) {
         SDL_FPoint Dv = Vector_Sub(pos, point->cords);
         point->angle = Safe_Angle(Dv);
+
+        if ( _Parametrs->alt_pressed && _Parametrs->ctrl_pressed && point->next ) {
+                Dv = Vector_Sub(point->next->cords, point->cords);
+                float angle2 = Safe_Angle(Dv);
+                point->angle = round( (point->angle - angle2 ) / M_PI_4 ) * M_PI_4 + angle2;
+        } else if ( _Parametrs->shift_pressed ) {
+                point->angle = round(point->angle / M_PI_4 ) * M_PI_4;
+        } else if ( _Parametrs->alt_pressed && point->prev ) {
+                Dv = Vector_Sub(point->cords, point->prev->cords);
+                float angle2 = Safe_Angle(Dv);
+                point->angle = round( (point->angle - angle2 ) / M_PI_4 ) * M_PI_4 + angle2;
+        } else if ( _Parametrs->ctrl_pressed && point->prev && point->next ) {
+                Dv = Vector_Sub(point->prev->cords, point->next->cords);
+                float angle2 = Safe_Angle(Dv);
+                point->angle = round( (point->angle - angle2 ) / M_PI_4 ) * M_PI_4 + angle2;
+        }
 }
 
 
@@ -366,7 +380,7 @@ void CheckSelectedPoint(  PArray *points, SDL_FPoint mouse_pos, Parametrs *_Para
                         break;
                 case PSTATE_VECTOR_SELECTED:
                         if ( _Parametrs->lmb_pressed ) {
-                                MoveVector(points->selected_point, mouse_pos);
+                                MoveVector(points->selected_point, mouse_pos, _Parametrs);
                         } else if ( 
                                 _TouchVector(points->selected_point->cords, mouse_pos, points->selected_point->angle, _Parametrs->fixed_dir_vector_width, _Parametrs->fixed_dir_vector_legth)
                         ) {

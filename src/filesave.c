@@ -10,10 +10,10 @@ static const SDL_DialogFileFilter dialog_filters[4] = {
 
 
 
-FILESAVE_FORMAT DefineFileFormat(char *_File_name) {
+FILESAVE_FORMAT DefineFileFormat(const char *_File_name) {
         char *extension = strrchr(_File_name, '.');
         if ( extension == NULL ) {
-                return FILE_FORMAT_PTS;
+                return FILE_FORMAT_UNDEFINED;
         }
 
         extension++;
@@ -22,8 +22,10 @@ FILESAVE_FORMAT DefineFileFormat(char *_File_name) {
                 return FILE_FORMAT_CSV;
         } else if ( strcmp(extension, "json") == 0 ) {
                 return FILE_FORMAT_JSON;
-        } else {
+        } else if ( strcmp(extension, "pts") == 0 ) {
                 return FILE_FORMAT_PTS;
+        } else {
+                return FILE_FORMAT_UNDEFINED;
         }
 }
 
@@ -31,6 +33,11 @@ FILESAVE_FORMAT DefineFileFormat(char *_File_name) {
 void SavePoints(PArray* _Points) {
         if ( _Points == NULL ) {
                 LogNotice("SavePoints", "No points to save");
+                return;
+        }
+
+        if ( _Points->format == FILE_FORMAT_UNDEFINED ) {
+                LogNotice("SavePoints", "Undefined file format");
                 return;
         }
 
@@ -194,54 +201,22 @@ void __ParsePTS(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
 }
 
 
-void _Remove_Spaces(char *_Str) {
-        char *pr = _Str, 
-             *pw = _Str;
-
-        while (*pr) {
-                *pw = *pr;
-                pr++;
-                pw += !(*pw == ' ' || *pw == '\n' || *pw == '\t' || *pw == '\r' );
-        }
-        *pw = '\0';
-}
-
-
-void __ParseJSON(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
-        float x = 0;
-        float y = 0;
-        float angle = 0;
-
-        // get file size
-        fseek(_Stream, 0 , SEEK_END);
-        size_t file_size = ftell(_Stream);
-        fseek(_Stream, 0, SEEK_SET);
-
-        if ( file_size > 134217728 ) {
-                LogNotice("ShowOpenFIleDialog (LoadPoints)", "File too large (128MB)");
-                return;
-        }
-
-        char *buffer = (char*)malloc(file_size + 1);
-
-        size_t buffer_size = fread(buffer, 1, file_size, _Stream);
-        if (  buffer_size == 0 ) {
-                LogNotice("ShowOpenFIleDialog (LoadPoints)", "couldn`t read file");
-                free(buffer);
-                return;
-        }
-
-        buffer[buffer_size] = '\0';
-        _Remove_Spaces(buffer);
-
-        printf("%f %f %f %p %p\n%s\n", x, y, angle, _Points, _Parametrs, buffer);
-
-
-        free(buffer);
-}
-
-
 void LoadPoints(PArray* _Points, Parametrs *_Parametrs) {
+        if ( _Points == NULL ) {
+                LogNotice("SavePoints", "Wrong pointer to [PArray]");
+                return;
+        }
+
+        if ( _Parametrs == NULL ) {
+                LogNotice("SavePoints", "Wrong pointer to [Parametrs]");
+                return;
+        }
+
+        if ( _Points->format == FILE_FORMAT_UNDEFINED ) {
+                LogNotice("SavePoints", "Undefined file format");
+                return;
+        }
+
         FreePoints(_Points);
         _Points->points = NULL;
 
@@ -283,25 +258,8 @@ static void SDLCALL __OpenFileDialogCallback(void* userdata, const char* const* 
         if ( filter >= 0 && filter < 3 ) {
                 format = (FILESAVE_FORMAT)filter;
         } else {
-                // define save format by extension
-                char *extension = strrchr(*filelist, '.');
-                if ( extension == NULL ) {
-                        format = FILE_FORMAT_PTS;
-                        goto save_points;
-                }
-
-                extension++;
-                
-                if ( strcmp(extension, "csv") == 0 ) {
-                        format = FILE_FORMAT_CSV;
-                } else if ( strcmp(extension, "json") == 0 ) {
-                        format = FILE_FORMAT_JSON;
-                } else {
-                        format = FILE_FORMAT_PTS;
-                }
+                format = DefineFileFormat(*filelist);
         }
-
-        save_points:
 
         args->points->format = format;
         strcpy_s(args->points->file_name, MAX_PATH, *filelist);
