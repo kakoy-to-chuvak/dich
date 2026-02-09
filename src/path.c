@@ -504,6 +504,9 @@ void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line, Param
         Point *now = points->points;
         if ( now == NULL ) {
                 points->points = new;
+                if ( angle ) {
+                        new->angle = *angle;
+                }
                 return;
         }
 
