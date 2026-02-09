@@ -197,7 +197,7 @@ bool _GetValues(PArray *_Points, Token *_Tokens, Parametrs *_Parametrs) {
         SDL_FPoint cords = {
                 -1, -1
         };
-        float angle = 0;
+        float angle = NAN;
 
         if ( _Tokens->type != TKNTP_OPEN_BRACKET ) {
                 return false;
@@ -216,10 +216,19 @@ bool _GetValues(PArray *_Points, Token *_Tokens, Parametrs *_Parametrs) {
                                 char *value = _Tokens->next->token;
 
                                 if ( strcmp(key, "x\"") == 0 ) {
+                                        if ( cords.x != -1 ) {
+                                                goto wrong_syntax;
+                                        }
                                         cords.x = atof(value);      
                                 } else if ( strcmp(key, "y\"") == 0 ) {
+                                        if ( cords.y != -1 ) {
+                                                goto wrong_syntax;
+                                        }
                                         cords.y = atof(value);
                                 } else if ( strcmp(key, "angle\"") == 0 ) {
+                                        if ( angle != NAN ) {
+                                                goto wrong_syntax;
+                                        }
                                         angle = atof(value);
                                 } else {
                                         goto wrong_syntax;
@@ -242,14 +251,28 @@ bool _GetValues(PArray *_Points, Token *_Tokens, Parametrs *_Parametrs) {
                                 opened_f_brackets--;
                                 break;
                         case TKNTP_KEY:
-                                if ( _CheckKey( _Tokens->token ) == 0 ) {
+                                if (    _CheckKey( _Tokens->token ) == 0 || _Tokens->prev == NULL || _Tokens->next == NULL ||
+                                        !( _Tokens->next->type == TKNTP_COLON || _Tokens->prev->type == TKNTP_OPEN_BRACKET || 
+                                        _Tokens->prev->type == TKNTP_COMMA || _Tokens->prev->type == TKNTP_OPEN_F_BRACKET ) ) 
+                                {       
                                         goto wrong_syntax;
                                 }
                                 break;
                         case TKNTP_VALUE:
+                                if (    _Tokens->prev == NULL || _Tokens->next == NULL ||
+                                        !( _Tokens->prev->type == TKNTP_COLON || _Tokens->next->type == TKNTP_CLOSE_BRACKET || 
+                                        _Tokens->next->type == TKNTP_COMMA || _Tokens->next->type == TKNTP_CLOSE_F_BRACKET ) ) 
+                                {       
+                                        goto wrong_syntax;
+                                }
                                 break;
                         case TKNTP_COMMA:
-                                
+                                if (    _Tokens->prev == NULL || _Tokens->next == NULL || 
+                                        _Tokens->prev->type == TKNTP_OPEN_BRACKET || _Tokens->prev->type == TKNTP_OPEN_F_BRACKET || 
+                                        _Tokens->next->type == TKNTP_CLOSE_BRACKET || _Tokens->next->type == TKNTP_CLOSE_F_BRACKET )
+                                {       
+                                        goto wrong_syntax;
+                                }
                                 break;
                         
                         default:
@@ -266,7 +289,7 @@ bool _GetValues(PArray *_Points, Token *_Tokens, Parametrs *_Parametrs) {
                 }
 
                 if ( _Tokens->type == TKNTP_CLOSE_F_BRACKET ) {
-                        if ( cords.x == -1 || cords.y == -1 ) {
+                        if ( cords.x == -1 || cords.y == -1 || angle == NAN) {
                                 goto wrong_syntax;
                         }
 

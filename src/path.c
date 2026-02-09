@@ -451,6 +451,10 @@ bool CheckMousePos(PArray *points, SDL_FPoint mouse_pos, Parametrs *_Parametrs) 
 
 
 void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line, Parametrs *_Parametrs) {
+        if ( points == NULL || _Parametrs == NULL ) {
+                return;
+        }
+        
         Point *new = malloc(sizeof(Point));
         if ( new == NULL ) {
                 LogError("AddPoint", "couldn`n allocate memory");
@@ -507,6 +511,7 @@ void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line, Param
                 if ( angle ) {
                         new->angle = *angle;
                 }
+                points->count++;
                 return;
         }
 
@@ -523,9 +528,14 @@ void AddPoint(PArray *points, SDL_FPoint cords, float *angle, Point *line, Param
                 SDL_FPoint Dv = Vector_Sub(new->cords, new->prev->cords);
                 new->angle = Safe_Angle(Dv);
         }
+        points->count++;
 }
 
 void AddPoint_tostart(PArray *points, SDL_FPoint cords, float angle, Parametrs * _Parametrs) {
+        if ( points == NULL || _Parametrs == NULL ) {
+                return;
+        }
+
         Point *new = malloc(sizeof(Point));
         if ( new == NULL ) {
                 LogError("AddPoint", "couldn`n allocate memory");
@@ -557,9 +567,14 @@ void AddPoint_tostart(PArray *points, SDL_FPoint cords, float angle, Parametrs *
         }
 
         new->angle = angle;
+        points->count++;
 }
 
 void DelPoint(PArray *points, Point *point) {
+        if ( points == NULL || point == NULL ) {
+                return;
+        }
+
         if ( point->prev ) {
                 point->prev->next = point->next;
         } else {
@@ -571,11 +586,16 @@ void DelPoint(PArray *points, Point *point) {
         }
 
         free(point);
+        points->count--;
 }
 
 
 
 void FreePoints(PArray *_Points) {
+        if ( _Points == NULL ) {
+                return;
+        }
+
         Point *now = _Points->points;
 
         while ( now ) {
@@ -583,4 +603,9 @@ void FreePoints(PArray *_Points) {
                 free(now);
                 now = next;
         }
+
+        _Points->points = NULL;
+        _Points->changed = 1;
+        _Points->selected_point = NULL;
+        _Points->count = 0;
 }

@@ -1,11 +1,4 @@
-build/*.exe
-build/*.dll
-
-build/*.log
-build/*.csv
-build/*.pts
-build/*.json
-
+build/*.*
 build/fonts/*.ttf
 
 .vscode/*

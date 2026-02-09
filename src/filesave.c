@@ -2,10 +2,10 @@
 
 
 static const SDL_DialogFileFilter dialog_filters[4] = {
-    { "JSON (*.json)",   "json" },
-    { "Points (*.pts)",  "pts" },
-    { "CSV (*.csv)",     "csv" },
-    { "All files (*.*)", "*" }
+    { "JSON (*.json)",    "json" },
+    { "TXT (*.txt)",      "txt"  },
+    { "CSV (*.csv)",      "csv"  },
+    { "All files (*.*)",  "*"    }
 };
 
 
@@ -22,8 +22,8 @@ FILESAVE_FORMAT DefineFileFormat(const char *_File_name) {
                 return FILE_FORMAT_CSV;
         } else if ( strcmp(extension, "json") == 0 ) {
                 return FILE_FORMAT_JSON;
-        } else if ( strcmp(extension, "pts") == 0 ) {
-                return FILE_FORMAT_PTS;
+        } else if ( strcmp(extension, "txt") == 0 ) {
+                return FILE_FORMAT_TXT;
         } else {
                 return FILE_FORMAT_UNDEFINED;
         }
@@ -116,9 +116,9 @@ static void SDLCALL __SaveFileDialogCallback(void* userdata, const char* const* 
                                 strcat_s(args->points->file_name, MAX_PATH, ".json");
                         break;
                 case 1:
-                        // if extension is undefined or not equals ".pts"
-                        if ( extension == NULL || strcmp(extension, ".pts") )
-                                strcat_s(args->points->file_name, MAX_PATH, ".pts");
+                        // if extension is undefined or not equals ".txt"
+                        if ( extension == NULL || strcmp(extension, ".txt") )
+                                strcat_s(args->points->file_name, MAX_PATH, ".txt");
                         break;
                 case 2:
                         // if extension is undefined or not equals ".csv"
@@ -180,7 +180,7 @@ void __ParseCSV(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
         }
 }
 
-void __ParsePTS(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
+void __ParseTXT(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
         float x = 0;
         float y = 0;
         float angle = 0;
@@ -195,7 +195,7 @@ void __ParsePTS(PArray *_Points, FILE *_Stream, Parametrs *_Parametrs) {
                         n = strlen(buffer) - 1;
                         if ( buffer[n] == '\n' ) 
                                 buffer[n] = '\0';
-                        LogNotice("ShowOpenFIleDialog (LoadPoints)", "wrong format for <.pts>: \"%s\"", buffer);
+                        LogNotice("ShowOpenFIleDialog (LoadPoints)", "wrong format for <.txt>: \"%s\"", buffer);
                 }
         }
 }
@@ -230,7 +230,7 @@ void LoadPoints(PArray* _Points, Parametrs *_Parametrs) {
                         __ParseJSON(_Points, file, _Parametrs);
                         break;
                 default:
-                        __ParsePTS(_Points, file, _Parametrs);
+                        __ParseTXT(_Points, file, _Parametrs);
         }
 
         _Points->changed = 1;

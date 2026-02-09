@@ -39,6 +39,7 @@ FileSaveArgs file_save_args;
 
 PArray points = {
         1,
+        0,
         NULL,
         NULL,
         "",
@@ -314,11 +315,8 @@ int Tick(APP *app) {
         }
         
 
-        static bool prev_lmb_state = 0;
-        bool lmb_clicked = parametrs.lmb_pressed && prev_lmb_state == 0;
-
-        static bool prev_rmb_state = 0;
-        bool rmb_clicked = parametrs.rmb_pressed && prev_rmb_state == 0;
+        bool lmb_clicked = parametrs.lmb_pressed == 0 && parametrs.prev_lmb_state;
+        bool rmb_clicked = parametrs.rmb_pressed == 0 && parametrs.prev_rmb_state;
 
         static struct menu_args args = {
                 NULL,
@@ -328,7 +326,7 @@ int Tick(APP *app) {
         
         CheckMousePos(&points, mouse_pos, &parametrs );
         
-        if ( rmb_clicked && prev_rmb_state == 0 && ( menu->active == 0 || Menu_MouseOut(menu, mouse_pos.x, mouse_pos.y) ) ) {
+        if ( rmb_clicked && ( menu->active == 0 || Menu_MouseOut(menu, mouse_pos.x, mouse_pos.y) ) ) {
                 args.cords = mouse_pos;
 
                 Menu_Move(menu, mouse_pos.x, mouse_pos.y, parametrs.window_w, parametrs.window_h);

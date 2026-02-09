@@ -9,6 +9,7 @@
 
 #include "path.h"
 #include "parametrs.h"
+#include "logs.h"
 
 
 

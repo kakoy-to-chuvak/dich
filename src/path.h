@@ -37,13 +37,14 @@ typedef struct Point {
 
 typedef enum FILESAVE_FORMAT {
         FILE_FORMAT_JSON = 0,
-        FILE_FORMAT_PTS = 1,
+        FILE_FORMAT_TXT = 1,
         FILE_FORMAT_CSV = 2,
         FILE_FORMAT_UNDEFINED = 3,
 } FILESAVE_FORMAT;
 
 typedef struct PArray {
         bool changed;
+        int count;
         Point *points;
         Point *selected_point;
         char file_name[MAX_PATH];
